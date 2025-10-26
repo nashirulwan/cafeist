@@ -139,7 +139,7 @@ class _CoffeeShopDetailScreenState extends State<CoffeeShopDetailScreen>
                   end: Alignment.bottomCenter,
                   colors: [
                     Colors.transparent,
-                    Colors.black.withOpacity(0.7),
+                    Theme.of(context).scaffoldBackgroundColor.withOpacity(0.7),
                   ],
                 ),
               ),
@@ -176,7 +176,7 @@ class _CoffeeShopDetailScreenState extends State<CoffeeShopDetailScreen>
                 child: Text(
                   coffeeShop.isOpen ? 'Open Now' : 'Closed',
                   style: GoogleFonts.inter(
-                    color: Colors.white,
+                    color: Theme.of(context).cardTheme.color,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
@@ -470,9 +470,9 @@ class _CoffeeShopDetailScreenState extends State<CoffeeShopDetailScreen>
           margin: const EdgeInsets.only(bottom: 16),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).cardTheme.color,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey[200]!),
+            border: Border.all(color: Theme.of(context).dividerColor),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -484,7 +484,7 @@ class _CoffeeShopDetailScreenState extends State<CoffeeShopDetailScreen>
                     child: Text(
                       review.userName[0].toUpperCase(),
                       style: GoogleFonts.inter(
-                        color: Colors.white,
+                        color: Theme.of(context).cardTheme.color,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -620,9 +620,9 @@ class _CoffeeShopDetailScreenState extends State<CoffeeShopDetailScreen>
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Column(
         children: List.generate(7, (index) {
@@ -639,7 +639,7 @@ class _CoffeeShopDetailScreenState extends State<CoffeeShopDetailScreen>
                         : FontWeight.normal,
                     color: days[index] == _getTodayName()
                         ? const Color(0xFF6F4E37)
-                        : Colors.black,
+                        : Theme.of(context).textTheme.titleLarge?.color ?? Colors.black,
                   ),
                 ),
                 Text(
@@ -664,9 +664,9 @@ class _CoffeeShopDetailScreenState extends State<CoffeeShopDetailScreen>
   Widget _buildContactInfo(CoffeeShop coffeeShop) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Column(
         children: [
@@ -689,9 +689,9 @@ class _CoffeeShopDetailScreenState extends State<CoffeeShopDetailScreen>
   Widget _buildSocialMediaLinks(Map<String, String> socialMedia) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Column(
         children: socialMedia.entries.map((entry) {
@@ -968,9 +968,9 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         foregroundColor: Colors.white,
         title: Text(
           '${_currentIndex + 1} / ${widget.photos.length}',
@@ -994,9 +994,9 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
                 placeholder: (context, url) => const Center(
                   child: CircularProgressIndicator(color: Colors.white),
                 ),
-                errorWidget: (context, url, error) => const Icon(
+                errorWidget: (context, url, error) => Icon(
                   Icons.broken_image,
-                  color: Colors.white,
+                  color: Theme.of(context).cardTheme.color,
                   size: 64,
                 ),
               ),

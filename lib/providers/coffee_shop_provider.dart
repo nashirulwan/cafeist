@@ -1,4 +1,6 @@
 import 'package:flutter/foundation.dart';
+import 'dart:convert';
+import 'package:flutter/services.dart';
 import '../models/coffee_shop.dart';
 import '../services/location_service.dart';
 
@@ -21,245 +23,102 @@ class CoffeeShopProvider with ChangeNotifier {
     _initializeCoffeeShops();
   }
 
-  void _initializeCoffeeShops() {
-    _coffeeShops = [
-      CoffeeShop(
-        id: '1',
-        name: 'And Coffee Space Malang',
-        description: 'Modern coffee shop with minimalist design and specialty coffee beans. Perfect for working and studying.',
-        address: 'Jl. Soekarno Hatta No. 24, Malang, East Java',
-        phoneNumber: '+62 341 493 888',
-        website: 'https://andcoffeespace.com',
-        latitude: -7.9445,
-        longitude: 112.6286,
-        rating: 4.7,
-        reviewCount: 286,
-        photos: [
-          'https://picsum.photos/seed/andcoffee1/400/300',
-          'https://picsum.photos/seed/andcoffee2/400/300',
-          'https://picsum.photos/seed/andcoffee3/400/300',
-        ],
-        reviews: [
-          Review(
-            id: '1',
-            userName: 'Rina Wijaya',
-            rating: 5.0,
-            comment: 'Great coffee and cozy atmosphere! Perfect spot for working on laptop.',
-            date: DateTime.now().subtract(const Duration(days: 2)),
-            photos: [],
-          ),
-          Review(
-            id: '2',
-            userName: 'Budi Santoso',
-            rating: 4.5,
-            comment: 'Love the minimalist design. Espresso is top-notch!',
-            date: DateTime.now().subtract(const Duration(days: 5)),
-            photos: [],
-          ),
-        ],
-        openingHours: OpeningHours(
-          monday: '8:00 AM - 10:00 PM',
-          tuesday: '8:00 AM - 10:00 PM',
-          wednesday: '8:00 AM - 10:00 PM',
-          thursday: '8:00 AM - 10:00 PM',
-          friday: '8:00 AM - 11:00 PM',
-          saturday: '9:00 AM - 11:00 PM',
-          sunday: '9:00 AM - 9:00 PM',
-        ),
-        trackingStatus: CafeTrackingStatus.visited,
-        visitData: VisitData(
-          personalRating: 4.5,
-          privateReview: 'Excellent coffee and great working environment. Fast WiFi.',
-          visitDates: [
-            DateTime.now().subtract(const Duration(days: 12)),
-            DateTime.now().subtract(const Duration(days: 4)),
-          ],
-        ),
-        socialMedia: {
-          'instagram': 'https://instagram.com/andcoffeespace',
-          'facebook': 'https://facebook.com/andcoffeespace',
-        },
-      ),
-      CoffeeShop(
-        id: '2',
-        name: 'Lafayette Coffee Malang',
-        description: 'Elegant coffee shop with French-inspired interior and premium single origin coffee.',
-        address: 'Jl. Borobudur No. 12, Malang, East Java',
-        phoneNumber: '+62 341 368 999',
-        website: 'https://lafayettecoffee.com',
-        latitude: -7.9790,
-        longitude: 112.6345,
-        rating: 4.8,
-        reviewCount: 412,
-        photos: [
-          'https://picsum.photos/seed/lafayette1/400/300',
-          'https://picsum.photos/seed/lafayette2/400/300',
-          'https://picsum.photos/seed/lafayette3/400/300',
-        ],
-        reviews: [
-          Review(
-            id: '3',
-            userName: 'Maya Putri',
-            rating: 5.0,
-            comment: 'Beautiful ambiance and exceptional coffee! Perfect for dates.',
-            date: DateTime.now().subtract(const Duration(days: 1)),
-            photos: [],
-          ),
-          Review(
-            id: '4',
-            userName: 'Kevin Pratama',
-            rating: 4.5,
-            comment: 'Their pour-over coffee is amazing. Love the classical music.',
-            date: DateTime.now().subtract(const Duration(days: 7)),
-            photos: [],
-          ),
-        ],
-        openingHours: OpeningHours(
-          monday: '10:00 AM - 10:00 PM',
-          tuesday: '10:00 AM - 10:00 PM',
-          wednesday: '10:00 AM - 10:00 PM',
-          thursday: '10:00 AM - 10:00 PM',
-          friday: '10:00 AM - 12:00 AM',
-          saturday: '10:00 AM - 12:00 AM',
-          sunday: '10:00 AM - 10:00 PM',
-        ),
-        trackingStatus: CafeTrackingStatus.wantToVisit,
-        visitData: null,
-        socialMedia: {
-          'instagram': 'https://instagram.com/lafayettecoffeemalang',
-          'facebook': 'https://facebook.com/lafayettecoffeemalang',
-        },
-      ),
-      CoffeeShop(
-        id: '3',
-        name: 'Motiv Coffee Malang',
-        description: 'Trendy coffee shop with motivational quotes and energetic atmosphere. Great for productivity.',
-        address: 'Jl. Simpang Borobudur No. 8, Malang, East Java',
-        phoneNumber: '+62 341 426 777',
-        website: 'https://motivcoffee.com',
-        latitude: -7.9621,
-        longitude: 112.6183,
-        rating: 4.6,
-        reviewCount: 198,
-        photos: [
-          'https://picsum.photos/seed/motiv1/400/300',
-          'https://picsum.photos/seed/motiv2/400/300',
-          'https://picsum.photos/seed/motiv3/400/300',
-        ],
-        reviews: [
-          Review(
-            id: '5',
-            userName: 'Diana Kartika',
-            rating: 4.5,
-            comment: 'Energetic atmosphere! Perfect for getting work done.',
-            date: DateTime.now().subtract(const Duration(days: 3)),
-            photos: [],
-          ),
-        ],
-        openingHours: OpeningHours(
-          monday: '7:00 AM - 9:00 PM',
-          tuesday: '7:00 AM - 9:00 PM',
-          wednesday: '7:00 AM - 9:00 PM',
-          thursday: '7:00 AM - 9:00 PM',
-          friday: '7:00 AM - 10:00 PM',
-          saturday: '8:00 AM - 10:00 PM',
-          sunday: '8:00 AM - 8:00 PM',
-        ),
-        trackingStatus: CafeTrackingStatus.wantToVisit,
-        visitData: null,
-        socialMedia: {
-          'instagram': 'https://instagram.com/motivcoffeemalang',
-          'tiktok': 'https://tiktok.com/@motivcoffeemalang',
-        },
-      ),
-      CoffeeShop(
-        id: '4',
-        name: 'TW Cafe & Eatery Malang',
-        description: 'Cozy cafe serving both coffee and delicious meals. Great for brunch and casual meetings.',
-        address: 'Jl. Kahuripan No. 9, Malang, East Java',
-        phoneNumber: '+62 341 324 555',
-        website: 'https://twcafeeatery.com',
-        latitude: -7.9664,
-        longitude: 112.6327,
-        rating: 4.5,
-        reviewCount: 324,
-        photos: [
-          'https://picsum.photos/seed/twcafe1/400/300',
-          'https://picsum.photos/seed/twcafe2/400/300',
-          'https://picsum.photos/seed/twcafe3/400/300',
-        ],
-        reviews: [
-          Review(
-            id: '6',
-            userName: 'Andi Wijaya',
-            rating: 4.0,
-            comment: 'Good coffee and great food! Perfect for lunch dates.',
-            date: DateTime.now().subtract(const Duration(days: 4)),
-            photos: [],
-          ),
-        ],
-        openingHours: OpeningHours(
-          monday: '8:00 AM - 9:00 PM',
-          tuesday: '8:00 AM - 9:00 PM',
-          wednesday: '8:00 AM - 9:00 PM',
-          thursday: '8:00 AM - 9:00 PM',
-          friday: '8:00 AM - 10:00 PM',
-          saturday: '9:00 AM - 10:00 PM',
-          sunday: '9:00 AM - 8:00 PM',
-        ),
-        trackingStatus: CafeTrackingStatus.notTracked,
-        visitData: null,
-        socialMedia: {
-          'instagram': 'https://instagram.com/twcafeeaterymalang',
-          'facebook': 'https://facebook.com/twcafeeaterymalang',
-        },
-      ),
-      CoffeeShop(
-        id: '5',
-        name: 'Lifika Cafe Malang',
-        description: 'Charming cafe with vintage decor and artisanal coffee. Known for signature latte art.',
-        address: 'Jl. Semeru No. 45, Malang, East Java',
-        phoneNumber: '+62 341 482 333',
-        website: 'https://lifikacafe.com',
-        latitude: -7.9838,
-        longitude: 112.6217,
-        rating: 4.7,
-        reviewCount: 276,
-        photos: [
-          'https://picsum.photos/seed/lifika1/400/300',
-          'https://picsum.photos/seed/lifika2/400/300',
-          'https://picsum.photos/seed/lifika3/400/300',
-        ],
-        reviews: [
-          Review(
-            id: '7',
-            userName: 'Siti Nurhaliza',
-            rating: 5.0,
-            comment: 'Beautiful vintage cafe! Their latte art is stunning and coffee is delicious.',
-            date: DateTime.now().subtract(const Duration(days: 6)),
-            photos: [],
-          ),
-        ],
-        openingHours: OpeningHours(
-          monday: '9:00 AM - 8:00 PM',
-          tuesday: '9:00 AM - 8:00 PM',
-          wednesday: '9:00 AM - 8:00 PM',
-          thursday: '9:00 AM - 8:00 PM',
-          friday: '9:00 AM - 9:00 PM',
-          saturday: '9:00 AM - 9:00 PM',
-          sunday: '10:00 AM - 7:00 PM',
-        ),
-        trackingStatus: CafeTrackingStatus.notTracked,
-        visitData: null,
-        socialMedia: {
-          'instagram': 'https://instagram.com/lifikacafemalang',
-          'tiktok': 'https://tiktok.com/@lifikacafe',
-        },
-      ),
-    ];
+  Future<void> _initializeCoffeeShops() async {
+    try {
+      // Load JSON file from assets
+      final String jsonString = await rootBundle.loadString('assets/data/coffee_shops.json');
+      final List<dynamic> jsonData = json.decode(jsonString);
 
-    _nearbyCoffeeShops = List.from(_coffeeShops);
-    notifyListeners();
+      // Convert JSON to CoffeeShop objects
+      _coffeeShops = jsonData.map((json) => _parseCoffeeShop(json)).toList();
+
+      _nearbyCoffeeShops = List.from(_coffeeShops);
+      notifyListeners();
+    } catch (e) {
+      // If JSON loading fails, use empty list
+      if (kDebugMode) {
+        print('Error loading coffee shops from JSON: $e');
+      }
+      _coffeeShops = [];
+      _nearbyCoffeeShops = [];
+      notifyListeners();
+    }
+  }
+
+  CoffeeShop _parseCoffeeShop(Map<String, dynamic> json) {
+    // Parse opening hours
+    final openingHoursJson = json['openingHours'] as Map<String, dynamic>;
+    final openingHours = OpeningHours(
+      monday: openingHoursJson['monday'] ?? '',
+      tuesday: openingHoursJson['tuesday'] ?? '',
+      wednesday: openingHoursJson['wednesday'] ?? '',
+      thursday: openingHoursJson['thursday'] ?? '',
+      friday: openingHoursJson['friday'] ?? '',
+      saturday: openingHoursJson['saturday'] ?? '',
+      sunday: openingHoursJson['sunday'] ?? '',
+    );
+
+    // Parse reviews
+    final reviewsJson = json['reviews'] as List<dynamic>? ?? [];
+    final reviews = reviewsJson.map((reviewJson) {
+      return Review(
+        id: reviewJson['id'] ?? '',
+        userName: reviewJson['userName'] ?? '',
+        rating: (reviewJson['rating'] ?? 0.0).toDouble(),
+        comment: reviewJson['comment'] ?? '',
+        date: DateTime.parse(reviewJson['date'] ?? DateTime.now().toIso8601String()),
+        photos: (reviewJson['photos'] as List<dynamic>?)?.cast<String>() ?? [],
+      );
+    }).toList();
+
+    // Parse visit data if exists
+    VisitData? visitData;
+    if (json['visitData'] != null) {
+      final visitJson = json['visitData'] as Map<String, dynamic>;
+      final visitDatesJson = visitJson['visitDates'] as List<dynamic>? ?? [];
+      visitData = VisitData(
+        personalRating: visitJson['personalRating']?.toDouble(),
+        privateReview: visitJson['privateReview'],
+        visitDates: visitDatesJson.map((date) => DateTime.parse(date)).toList(),
+        createdAt: DateTime.parse(visitJson['createdAt'] ?? DateTime.now().toIso8601String()),
+        updatedAt: DateTime.parse(visitJson['updatedAt'] ?? DateTime.now().toIso8601String()),
+      );
+    }
+
+    // Parse tracking status
+    CafeTrackingStatus trackingStatus;
+    switch (json['trackingStatus']) {
+      case 'visited':
+        trackingStatus = CafeTrackingStatus.visited;
+        break;
+      case 'wantToVisit':
+        trackingStatus = CafeTrackingStatus.wantToVisit;
+        break;
+      default:
+        trackingStatus = CafeTrackingStatus.notTracked;
+    }
+
+    return CoffeeShop(
+      id: json['id'] ?? '',
+      name: json['name'] ?? '',
+      description: json['description'] ?? '',
+      address: json['address'] ?? '',
+      phoneNumber: json['phoneNumber'] ?? '',
+      website: json['website'] ?? '',
+      latitude: (json['latitude'] ?? 0.0).toDouble(),
+      longitude: (json['longitude'] ?? 0.0).toDouble(),
+      rating: (json['rating'] ?? 0.0).toDouble(),
+      reviewCount: json['reviewCount'] ?? 0,
+      photos: (json['photos'] as List<dynamic>?)?.cast<String>() ?? [],
+      reviews: reviews,
+      openingHours: openingHours,
+      distance: 0.0,
+      isOpen: true,
+      isFavorite: false,
+      trackingStatus: trackingStatus,
+      visitData: visitData,
+      socialMedia: (json['socialMedia'] as Map<String, dynamic>?)?.cast<String, String>(),
+    );
   }
 
   Future<void> updateNearbyCoffeeShops() async {

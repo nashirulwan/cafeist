@@ -86,9 +86,6 @@ class _MainScreenState extends State<MainScreen> {
             });
           },
           type: BottomNavigationBarType.fixed,
-          selectedItemColor: const Color(0xFF6F4E37),
-          unselectedItemColor: Colors.grey,
-          backgroundColor: Colors.white,
           elevation: 0,
           items: const [
             BottomNavigationBarItem(

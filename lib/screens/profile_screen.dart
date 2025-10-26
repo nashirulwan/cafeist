@@ -32,24 +32,24 @@ class ProfileScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildProfileHeader(),
+            _buildProfileHeader(context),
             const SizedBox(height: 24),
-            _buildPreferencesSection(),
+            _buildPreferencesSection(context),
             const SizedBox(height: 24),
-            _buildAboutSection(),
+            _buildAboutSection(context),
             const SizedBox(height: 24),
-            _buildSupportSection(),
+            _buildSupportSection(context),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildProfileHeader() {
+  Widget _buildProfileHeader(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -68,10 +68,10 @@ class ProfileScreen extends StatelessWidget {
               shape: BoxShape.circle,
               color: const Color(0xFF6F4E37),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.person,
               size: 40,
-              color: Colors.white,
+              color: Theme.of(context).cardTheme.color,
             ),
           ),
           const SizedBox(width: 20),
@@ -118,7 +118,7 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPreferencesSection() {
+  Widget _buildPreferencesSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -132,7 +132,7 @@ class ProfileScreen extends StatelessWidget {
         const SizedBox(height: 12),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).cardTheme.color,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
@@ -178,7 +178,7 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildAboutSection() {
+  Widget _buildAboutSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -192,7 +192,7 @@ class ProfileScreen extends StatelessWidget {
         const SizedBox(height: 12),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).cardTheme.color,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
@@ -238,7 +238,7 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSupportSection() {
+  Widget _buildSupportSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -252,7 +252,7 @@ class ProfileScreen extends StatelessWidget {
         const SizedBox(height: 12),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).cardTheme.color,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
