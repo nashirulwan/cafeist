@@ -439,74 +439,9 @@ class _CoffeeShopDetailScreenState extends State<CoffeeShopDetailScreen>
           ),
           const SizedBox(height: 24),
 
-          // Price per person
-          if (coffeeShop.pricePerPerson != null) ...[
-            _buildSectionTitle('Price'),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey[200]!),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.attach_money,
-                    color: const Color(0xFF6F4E37),
-                    size: 20,
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    '\$${coffeeShop.pricePerPerson!.toStringAsFixed(2)} per person',
-                    style: GoogleFonts.inter(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF6F4E37),
-                    ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    'Average price',
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-          ],
-
           _buildSectionTitle('Hours'),
           const SizedBox(height: 8),
           _buildHoursList(coffeeShop.openingHours),
-          const SizedBox(height: 24),
-          _buildSectionTitle('Features'),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: coffeeShop.features.map((feature) {
-              return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF6F4E37).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Text(
-                  feature,
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: const Color(0xFF6F4E37),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
           const SizedBox(height: 24),
 
           // Social Media

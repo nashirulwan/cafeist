@@ -10,7 +10,6 @@ class CoffeeShop {
   final double rating;
   final int reviewCount;
   final List<String> photos;
-  final List<String> features;
   final List<Review> reviews;
   final OpeningHours openingHours;
   final double distance;
@@ -18,7 +17,6 @@ class CoffeeShop {
   final bool isFavorite;
   final CafeTrackingStatus trackingStatus;
   final VisitData? visitData;
-  final double? pricePerPerson;
   final Map<String, String>? socialMedia;
 
   CoffeeShop({
@@ -33,7 +31,6 @@ class CoffeeShop {
     required this.rating,
     required this.reviewCount,
     required this.photos,
-    required this.features,
     required this.reviews,
     required this.openingHours,
     this.distance = 0.0,
@@ -41,7 +38,6 @@ class CoffeeShop {
     this.isFavorite = false,
     this.trackingStatus = CafeTrackingStatus.notTracked,
     this.visitData,
-    this.pricePerPerson,
     this.socialMedia,
   });
 
@@ -57,7 +53,6 @@ class CoffeeShop {
     double? rating,
     int? reviewCount,
     List<String>? photos,
-    List<String>? features,
     List<Review>? reviews,
     OpeningHours? openingHours,
     double? distance,
@@ -65,7 +60,6 @@ class CoffeeShop {
     bool? isFavorite,
     CafeTrackingStatus? trackingStatus,
     VisitData? visitData,
-    double? pricePerPerson,
     Map<String, String>? socialMedia,
   }) {
     return CoffeeShop(
@@ -80,7 +74,6 @@ class CoffeeShop {
       rating: rating ?? this.rating,
       reviewCount: reviewCount ?? this.reviewCount,
       photos: photos ?? this.photos,
-      features: features ?? this.features,
       reviews: reviews ?? this.reviews,
       openingHours: openingHours ?? this.openingHours,
       distance: distance ?? this.distance,
@@ -88,7 +81,6 @@ class CoffeeShop {
       isFavorite: isFavorite ?? this.isFavorite,
       trackingStatus: trackingStatus ?? this.trackingStatus,
       visitData: visitData ?? this.visitData,
-      pricePerPerson: pricePerPerson ?? this.pricePerPerson,
       socialMedia: socialMedia ?? this.socialMedia,
     );
   }

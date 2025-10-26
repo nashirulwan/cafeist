@@ -6,6 +6,7 @@ import 'screens/list_screen.dart';
 import 'screens/favorites_screen.dart';
 import 'screens/profile_screen.dart';
 import 'providers/coffee_shop_provider.dart';
+import 'providers/theme_provider.dart';
 
 void main() {
   runApp(const CoffeeFinderApp());
@@ -16,43 +17,22 @@ class CoffeeFinderApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => CoffeeShopProvider(),
-      child: MaterialApp(
-        title: 'Coffee Finder',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          primarySwatch: Colors.brown,
-          primaryColor: const Color(0xFF6F4E37),
-          scaffoldBackgroundColor: const Color(0xFFF8F8F8),
-          textTheme: GoogleFonts.interTextTheme(),
-          appBarTheme: AppBarTheme(
-            backgroundColor: const Color(0xFF6F4E37),
-            foregroundColor: Colors.white,
-            elevation: 0,
-            titleTextStyle: GoogleFonts.inter(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-            ),
-          ),
-          elevatedButtonTheme: ElevatedButtonThemeData(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF6F4E37),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-          cardTheme: CardThemeData(
-            elevation: 2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-          ),
-        ),
-        home: const MainScreen(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => CoffeeShopProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+      ],
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return MaterialApp(
+            title: 'Coffee Finder',
+            debugShowCheckedModeBanner: false,
+            theme: themeProvider.lightTheme,
+            darkTheme: themeProvider.darkTheme,
+            themeMode: themeProvider.themeMode,
+            home: const MainScreen(),
+          );
+        },
       ),
     );
   }

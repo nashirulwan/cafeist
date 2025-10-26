@@ -8,7 +8,6 @@ class CoffeeShopProvider with ChangeNotifier {
   bool _isLoading = false;
   String? _error;
   String? _searchQuery;
-  List<String> _selectedFeatures = [];
   double _userLatitude = 0.0;
   double _userLongitude = 0.0;
 
@@ -17,7 +16,6 @@ class CoffeeShopProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
   String? get searchQuery => _searchQuery;
-  List<String> get selectedFeatures => _selectedFeatures;
 
   CoffeeShopProvider() {
     _initializeCoffeeShops();
@@ -27,132 +25,35 @@ class CoffeeShopProvider with ChangeNotifier {
     _coffeeShops = [
       CoffeeShop(
         id: '1',
-        name: 'Artisan Coffee Roasters',
-        description: 'Premium coffee shop with specialty beans and expert baristas. Perfect for coffee connoisseurs.',
-        address: '123 Main St, New York, NY 10001',
-        phoneNumber: '+1 (555) 123-4567',
-        website: 'https://artisancoffee.com',
-        latitude: 40.7580,
-        longitude: -73.9855,
-        rating: 4.8,
-        reviewCount: 324,
+        name: 'And Coffee Space Malang',
+        description: 'Modern coffee shop with minimalist design and specialty coffee beans. Perfect for working and studying.',
+        address: 'Jl. Soekarno Hatta No. 24, Malang, East Java',
+        phoneNumber: '+62 341 493 888',
+        website: 'https://andcoffeespace.com',
+        latitude: -7.9445,
+        longitude: 112.6286,
+        rating: 4.7,
+        reviewCount: 286,
         photos: [
-          'https://picsum.photos/seed/coffee1/400/300',
-          'https://picsum.photos/seed/coffee2/400/300',
-          'https://picsum.photos/seed/coffee3/400/300',
+          'https://picsum.photos/seed/andcoffee1/400/300',
+          'https://picsum.photos/seed/andcoffee2/400/300',
+          'https://picsum.photos/seed/andcoffee3/400/300',
         ],
-        features: ['WiFi', 'Outdoor Seating', 'Pet Friendly', 'Vegan Options'],
         reviews: [
           Review(
             id: '1',
-            userName: 'Sarah Johnson',
+            userName: 'Rina Wijaya',
             rating: 5.0,
-            comment: 'Amazing coffee and atmosphere! The baristas are so knowledgeable.',
+            comment: 'Great coffee and cozy atmosphere! Perfect spot for working on laptop.',
             date: DateTime.now().subtract(const Duration(days: 2)),
             photos: [],
           ),
           Review(
             id: '2',
-            userName: 'Mike Chen',
+            userName: 'Budi Santoso',
             rating: 4.5,
-            comment: 'Great place to work. Fast WiFi and excellent coffee.',
+            comment: 'Love the minimalist design. Espresso is top-notch!',
             date: DateTime.now().subtract(const Duration(days: 5)),
-            photos: [],
-          ),
-        ],
-        openingHours: OpeningHours(
-          monday: '7:00 AM - 8:00 PM',
-          tuesday: '7:00 AM - 8:00 PM',
-          wednesday: '7:00 AM - 8:00 PM',
-          thursday: '7:00 AM - 8:00 PM',
-          friday: '7:00 AM - 9:00 PM',
-          saturday: '8:00 AM - 9:00 PM',
-          sunday: '8:00 AM - 7:00 PM',
-        ),
-        trackingStatus: CafeTrackingStatus.visited,
-        visitData: VisitData(
-          personalRating: 4.5,
-          privateReview: 'Great atmosphere for working, excellent espresso.',
-          visitDates: [
-            DateTime.now().subtract(const Duration(days: 10)),
-            DateTime.now().subtract(const Duration(days: 3)),
-          ],
-        ),
-        pricePerPerson: 12.50,
-        socialMedia: {
-          'instagram': 'https://instagram.com/artisancoffee',
-          'facebook': 'https://facebook.com/artisancoffee',
-          'twitter': 'https://twitter.com/artisancoffee',
-        },
-      ),
-      CoffeeShop(
-        id: '2',
-        name: 'The Daily Grind',
-        description: 'Cozy neighborhood coffee shop with fresh pastries and friendly staff.',
-        address: '456 Oak Ave, Brooklyn, NY 11201',
-        phoneNumber: '+1 (555) 987-6543',
-        website: 'https://dailygrind.com',
-        latitude: 40.6892,
-        longitude: -73.9442,
-        rating: 4.6,
-        reviewCount: 189,
-        photos: [
-          'https://picsum.photos/seed/grind1/400/300',
-          'https://picsum.photos/seed/grind2/400/300',
-        ],
-        features: ['WiFi', 'Breakfast', 'Pastries', 'Credit Cards'],
-        reviews: [
-          Review(
-            id: '3',
-            userName: 'Emily Davis',
-            rating: 4.0,
-            comment: 'Good coffee and pastries. Can get busy in the mornings.',
-            date: DateTime.now().subtract(const Duration(days: 1)),
-            photos: [],
-          ),
-        ],
-        openingHours: OpeningHours(
-          monday: '6:30 AM - 6:00 PM',
-          tuesday: '6:30 AM - 6:00 PM',
-          wednesday: '6:30 AM - 6:00 PM',
-          thursday: '6:30 AM - 6:00 PM',
-          friday: '6:30 AM - 7:00 PM',
-          saturday: '7:00 AM - 7:00 PM',
-          sunday: '7:00 AM - 5:00 PM',
-        ),
-        trackingStatus: CafeTrackingStatus.wantToVisit,
-        visitData: null,
-        pricePerPerson: 8.75,
-        socialMedia: {
-          'instagram': 'https://instagram.com/dailygrind',
-          'facebook': 'https://facebook.com/dailygrind',
-        },
-      ),
-      CoffeeShop(
-        id: '3',
-        name: 'Café Lumière',
-        description: 'French-inspired café with elegant atmosphere and premium espresso drinks.',
-        address: '789 Pine St, Manhattan, NY 10003',
-        phoneNumber: '+1 (555) 246-8135',
-        website: 'https://cafelumiere.com',
-        latitude: 40.7260,
-        longitude: -73.9897,
-        rating: 4.9,
-        reviewCount: 467,
-        photos: [
-          'https://picsum.photos/seed/lumiere1/400/300',
-          'https://picsum.photos/seed/lumiere2/400/300',
-          'https://picsum.photos/seed/lumiere3/400/300',
-          'https://picsum.photos/seed/lumiere4/400/300',
-        ],
-        features: ['WiFi', 'Romantic', 'Wine', 'Desserts', 'Outdoor Seating'],
-        reviews: [
-          Review(
-            id: '4',
-            userName: 'David Wilson',
-            rating: 5.0,
-            comment: 'Perfect for a date night or quiet work session. Excellent cappuccino!',
-            date: DateTime.now().subtract(const Duration(days: 3)),
             photos: [],
           ),
         ],
@@ -165,90 +66,195 @@ class CoffeeShopProvider with ChangeNotifier {
           saturday: '9:00 AM - 11:00 PM',
           sunday: '9:00 AM - 9:00 PM',
         ),
-        trackingStatus: CafeTrackingStatus.notTracked,
-        visitData: null,
-        pricePerPerson: 15.00,
+        trackingStatus: CafeTrackingStatus.visited,
+        visitData: VisitData(
+          personalRating: 4.5,
+          privateReview: 'Excellent coffee and great working environment. Fast WiFi.',
+          visitDates: [
+            DateTime.now().subtract(const Duration(days: 12)),
+            DateTime.now().subtract(const Duration(days: 4)),
+          ],
+        ),
         socialMedia: {
-          'instagram': 'https://instagram.com/cafelumiere',
-          'tiktok': 'https://tiktok.com/@cafelumiere',
+          'instagram': 'https://instagram.com/andcoffeespace',
+          'facebook': 'https://facebook.com/andcoffeespace',
+        },
+      ),
+      CoffeeShop(
+        id: '2',
+        name: 'Lafayette Coffee Malang',
+        description: 'Elegant coffee shop with French-inspired interior and premium single origin coffee.',
+        address: 'Jl. Borobudur No. 12, Malang, East Java',
+        phoneNumber: '+62 341 368 999',
+        website: 'https://lafayettecoffee.com',
+        latitude: -7.9790,
+        longitude: 112.6345,
+        rating: 4.8,
+        reviewCount: 412,
+        photos: [
+          'https://picsum.photos/seed/lafayette1/400/300',
+          'https://picsum.photos/seed/lafayette2/400/300',
+          'https://picsum.photos/seed/lafayette3/400/300',
+        ],
+        reviews: [
+          Review(
+            id: '3',
+            userName: 'Maya Putri',
+            rating: 5.0,
+            comment: 'Beautiful ambiance and exceptional coffee! Perfect for dates.',
+            date: DateTime.now().subtract(const Duration(days: 1)),
+            photos: [],
+          ),
+          Review(
+            id: '4',
+            userName: 'Kevin Pratama',
+            rating: 4.5,
+            comment: 'Their pour-over coffee is amazing. Love the classical music.',
+            date: DateTime.now().subtract(const Duration(days: 7)),
+            photos: [],
+          ),
+        ],
+        openingHours: OpeningHours(
+          monday: '10:00 AM - 10:00 PM',
+          tuesday: '10:00 AM - 10:00 PM',
+          wednesday: '10:00 AM - 10:00 PM',
+          thursday: '10:00 AM - 10:00 PM',
+          friday: '10:00 AM - 12:00 AM',
+          saturday: '10:00 AM - 12:00 AM',
+          sunday: '10:00 AM - 10:00 PM',
+        ),
+        trackingStatus: CafeTrackingStatus.wantToVisit,
+        visitData: null,
+        socialMedia: {
+          'instagram': 'https://instagram.com/lafayettecoffeemalang',
+          'facebook': 'https://facebook.com/lafayettecoffeemalang',
+        },
+      ),
+      CoffeeShop(
+        id: '3',
+        name: 'Motiv Coffee Malang',
+        description: 'Trendy coffee shop with motivational quotes and energetic atmosphere. Great for productivity.',
+        address: 'Jl. Simpang Borobudur No. 8, Malang, East Java',
+        phoneNumber: '+62 341 426 777',
+        website: 'https://motivcoffee.com',
+        latitude: -7.9621,
+        longitude: 112.6183,
+        rating: 4.6,
+        reviewCount: 198,
+        photos: [
+          'https://picsum.photos/seed/motiv1/400/300',
+          'https://picsum.photos/seed/motiv2/400/300',
+          'https://picsum.photos/seed/motiv3/400/300',
+        ],
+        reviews: [
+          Review(
+            id: '5',
+            userName: 'Diana Kartika',
+            rating: 4.5,
+            comment: 'Energetic atmosphere! Perfect for getting work done.',
+            date: DateTime.now().subtract(const Duration(days: 3)),
+            photos: [],
+          ),
+        ],
+        openingHours: OpeningHours(
+          monday: '7:00 AM - 9:00 PM',
+          tuesday: '7:00 AM - 9:00 PM',
+          wednesday: '7:00 AM - 9:00 PM',
+          thursday: '7:00 AM - 9:00 PM',
+          friday: '7:00 AM - 10:00 PM',
+          saturday: '8:00 AM - 10:00 PM',
+          sunday: '8:00 AM - 8:00 PM',
+        ),
+        trackingStatus: CafeTrackingStatus.wantToVisit,
+        visitData: null,
+        socialMedia: {
+          'instagram': 'https://instagram.com/motivcoffeemalang',
+          'tiktok': 'https://tiktok.com/@motivcoffeemalang',
         },
       ),
       CoffeeShop(
         id: '4',
-        name: 'Brew & Bloom',
-        description: 'Coffee shop with plant-based options and sustainable practices.',
-        address: '321 Elm St, Queens, NY 11101',
-        phoneNumber: '+1 (555) 369-2580',
-        website: 'https://brewandbloom.com',
-        latitude: 40.7282,
-        longitude: -73.7949,
-        rating: 4.7,
-        reviewCount: 256,
+        name: 'TW Cafe & Eatery Malang',
+        description: 'Cozy cafe serving both coffee and delicious meals. Great for brunch and casual meetings.',
+        address: 'Jl. Kahuripan No. 9, Malang, East Java',
+        phoneNumber: '+62 341 324 555',
+        website: 'https://twcafeeatery.com',
+        latitude: -7.9664,
+        longitude: 112.6327,
+        rating: 4.5,
+        reviewCount: 324,
         photos: [
-          'https://picsum.photos/seed/bloom1/400/300',
-          'https://picsum.photos/seed/bloom2/400/300',
+          'https://picsum.photos/seed/twcafe1/400/300',
+          'https://picsum.photos/seed/twcafe2/400/300',
+          'https://picsum.photos/seed/twcafe3/400/300',
         ],
-        features: ['WiFi', 'Vegan Options', 'Sustainable', 'Organic', 'Gluten-Free'],
         reviews: [
           Review(
-            id: '5',
-            userName: 'Lisa Park',
-            rating: 4.5,
-            comment: 'Love their plant-based options! Great atmosphere.',
+            id: '6',
+            userName: 'Andi Wijaya',
+            rating: 4.0,
+            comment: 'Good coffee and great food! Perfect for lunch dates.',
             date: DateTime.now().subtract(const Duration(days: 4)),
             photos: [],
           ),
         ],
         openingHours: OpeningHours(
-          monday: '7:00 AM - 7:00 PM',
-          tuesday: '7:00 AM - 7:00 PM',
-          wednesday: '7:00 AM - 7:00 PM',
-          thursday: '7:00 AM - 7:00 PM',
-          friday: '7:00 AM - 8:00 PM',
-          saturday: '8:00 AM - 8:00 PM',
-          sunday: '8:00 AM - 6:00 PM',
+          monday: '8:00 AM - 9:00 PM',
+          tuesday: '8:00 AM - 9:00 PM',
+          wednesday: '8:00 AM - 9:00 PM',
+          thursday: '8:00 AM - 9:00 PM',
+          friday: '8:00 AM - 10:00 PM',
+          saturday: '9:00 AM - 10:00 PM',
+          sunday: '9:00 AM - 8:00 PM',
         ),
-        trackingStatus: CafeTrackingStatus.wantToVisit,
+        trackingStatus: CafeTrackingStatus.notTracked,
         visitData: null,
+        socialMedia: {
+          'instagram': 'https://instagram.com/twcafeeaterymalang',
+          'facebook': 'https://facebook.com/twcafeeaterymalang',
+        },
       ),
       CoffeeShop(
         id: '5',
-        name: 'Central Perk Cafe',
-        description: 'Iconic coffee shop with comfortable seating and great latte art.',
-        address: '555 Broadway, New York, NY 10012',
-        phoneNumber: '+1 (555) 147-2580',
-        website: 'https://centralperkcafe.com',
-        latitude: 40.7209,
-        longitude: -73.9972,
-        rating: 4.4,
-        reviewCount: 523,
+        name: 'Lifika Cafe Malang',
+        description: 'Charming cafe with vintage decor and artisanal coffee. Known for signature latte art.',
+        address: 'Jl. Semeru No. 45, Malang, East Java',
+        phoneNumber: '+62 341 482 333',
+        website: 'https://lifikacafe.com',
+        latitude: -7.9838,
+        longitude: 112.6217,
+        rating: 4.7,
+        reviewCount: 276,
         photos: [
-          'https://picsum.photos/seed/perk1/400/300',
-          'https://picsum.photos/seed/perk2/400/300',
-          'https://picsum.photos/seed/perk3/400/300',
+          'https://picsum.photos/seed/lifika1/400/300',
+          'https://picsum.photos/seed/lifika2/400/300',
+          'https://picsum.photos/seed/lifika3/400/300',
         ],
-        features: ['WiFi', 'Comfortable Seating', 'Group Friendly', 'Events'],
         reviews: [
           Review(
-            id: '6',
-            userName: 'Tom Anderson',
-            rating: 4.0,
-            comment: 'Fun atmosphere, good coffee. Gets crowded on weekends.',
+            id: '7',
+            userName: 'Siti Nurhaliza',
+            rating: 5.0,
+            comment: 'Beautiful vintage cafe! Their latte art is stunning and coffee is delicious.',
             date: DateTime.now().subtract(const Duration(days: 6)),
             photos: [],
           ),
         ],
         openingHours: OpeningHours(
-          monday: '6:00 AM - 10:00 PM',
-          tuesday: '6:00 AM - 10:00 PM',
-          wednesday: '6:00 AM - 10:00 PM',
-          thursday: '6:00 AM - 10:00 PM',
-          friday: '6:00 AM - 11:00 PM',
-          saturday: '7:00 AM - 11:00 PM',
-          sunday: '7:00 AM - 9:00 PM',
+          monday: '9:00 AM - 8:00 PM',
+          tuesday: '9:00 AM - 8:00 PM',
+          wednesday: '9:00 AM - 8:00 PM',
+          thursday: '9:00 AM - 8:00 PM',
+          friday: '9:00 AM - 9:00 PM',
+          saturday: '9:00 AM - 9:00 PM',
+          sunday: '10:00 AM - 7:00 PM',
         ),
         trackingStatus: CafeTrackingStatus.notTracked,
         visitData: null,
+        socialMedia: {
+          'instagram': 'https://instagram.com/lifikacafemalang',
+          'tiktok': 'https://tiktok.com/@lifikacafe',
+        },
       ),
     ];
 
@@ -292,31 +298,14 @@ class CoffeeShopProvider with ChangeNotifier {
     _filterCoffeeShops();
   }
 
-  void filterByFeatures(List<String> features) {
-    _selectedFeatures = features;
-    _filterCoffeeShops();
-  }
-
   void _filterCoffeeShops() {
     _nearbyCoffeeShops = _coffeeShops.where((shop) {
-      bool matchesSearch = true;
-      bool matchesFeatures = true;
-
       if (_searchQuery != null && _searchQuery!.isNotEmpty) {
-        matchesSearch = shop.name.toLowerCase().contains(_searchQuery!.toLowerCase()) ||
-                       shop.description.toLowerCase().contains(_searchQuery!.toLowerCase()) ||
-                       shop.address.toLowerCase().contains(_searchQuery!.toLowerCase());
+        return shop.name.toLowerCase().contains(_searchQuery!.toLowerCase()) ||
+               shop.description.toLowerCase().contains(_searchQuery!.toLowerCase()) ||
+               shop.address.toLowerCase().contains(_searchQuery!.toLowerCase());
       }
-
-      if (_selectedFeatures.isNotEmpty) {
-        matchesFeatures = _selectedFeatures.every((feature) =>
-          shop.features.any((shopFeature) =>
-            shopFeature.toLowerCase().contains(feature.toLowerCase())
-          )
-        );
-      }
-
-      return matchesSearch && matchesFeatures;
+      return true;
     }).toList();
 
     notifyListeners();
@@ -342,14 +331,6 @@ class CoffeeShopProvider with ChangeNotifier {
 
   List<CoffeeShop> getFavoriteCoffeeShops() {
     return _coffeeShops.where((shop) => shop.isFavorite).toList();
-  }
-
-  List<String> getAllFeatures() {
-    final Set<String> allFeatures = {};
-    for (final shop in _coffeeShops) {
-      allFeatures.addAll(shop.features);
-    }
-    return allFeatures.toList();
   }
 
   CoffeeShop? getCoffeeShopById(String id) {

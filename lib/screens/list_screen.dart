@@ -357,32 +357,6 @@ class _ListScreenState extends State<ListScreen> with TickerProviderStateMixin {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                if (coffeeShop.features.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 4,
-                    runSpacing: 4,
-                    children: coffeeShop.features.take(3).map((feature) {
-                      return Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[200],
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          feature,
-                          style: GoogleFonts.inter(
-                            fontSize: 10,
-                            color: Colors.grey[700],
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ],
                 // Action buttons for want to visit
                 if (type == 'want_to_visit') ...[
                   const SizedBox(height: 12),

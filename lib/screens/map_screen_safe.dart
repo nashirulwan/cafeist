@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/coffee_shop_provider.dart';
+import '../providers/theme_provider.dart';
 import '../models/coffee_shop.dart';
 import 'coffee_shop_detail_screen.dart';
 
@@ -20,14 +21,6 @@ class _MapScreenSafeState extends State<MapScreenSafe> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Home'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: () {
-              _showFilterDialog(context);
-            },
-          ),
-        ],
       ),
       body: Consumer<CoffeeShopProvider>(
         builder: (context, provider, child) {
@@ -84,10 +77,6 @@ class _MapScreenSafeState extends State<MapScreenSafe> {
         decoration: InputDecoration(
           hintText: 'Search coffee shops...',
           prefixIcon: const Icon(Icons.search),
-          suffixIcon: IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: () => _showFilterDialog(context),
-          ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide.none,
@@ -372,13 +361,6 @@ class _MapScreenSafeState extends State<MapScreenSafe> {
     );
   }
 
-  void _showFilterDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => const FilterDialog(),
-    );
-  }
-
   Widget _buildStatusBadge(CafeTrackingStatus status) {
     Color color;
     String label;
@@ -425,108 +407,6 @@ class _MapScreenSafeState extends State<MapScreenSafe> {
           ),
         ],
       ),
-    );
-  }
-}
-
-class FilterDialog extends StatefulWidget {
-  const FilterDialog({super.key});
-
-  @override
-  State<FilterDialog> createState() => _FilterDialogState();
-}
-
-class _FilterDialogState extends State<FilterDialog> {
-  List<String> selectedFeatures = [];
-
-  @override
-  Widget build(BuildContext context) {
-    final provider = context.read<CoffeeShopProvider>();
-    final allFeatures = provider.getAllFeatures();
-
-    return AlertDialog(
-      title: Text(
-        'Filter Coffee Shops',
-        style: GoogleFonts.inter(
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-      content: SizedBox(
-        width: double.maxFinite,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Features',
-              style: GoogleFonts.inter(
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: allFeatures.map((feature) {
-                final isSelected = selectedFeatures.contains(feature);
-                return FilterChip(
-                  label: Text(
-                    feature,
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                    ),
-                  ),
-                  selected: isSelected,
-                  onSelected: (selected) {
-                    setState(() {
-                      if (selected) {
-                        selectedFeatures.add(feature);
-                      } else {
-                        selectedFeatures.remove(feature);
-                      }
-                    });
-                  },
-                  backgroundColor: Colors.grey[200],
-                  selectedColor: const Color(0xFF6F4E37).withOpacity(0.2),
-                  checkmarkColor: const Color(0xFF6F4E37),
-                );
-              }).toList(),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () {
-            setState(() {
-              selectedFeatures.clear();
-            });
-          },
-          child: Text(
-            'Clear',
-            style: GoogleFonts.inter(),
-          ),
-        ),
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(
-            'Cancel',
-            style: GoogleFonts.inter(),
-          ),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            provider.filterByFeatures(selectedFeatures);
-            Navigator.pop(context);
-          },
-          child: Text(
-            'Apply',
-            style: GoogleFonts.inter(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
