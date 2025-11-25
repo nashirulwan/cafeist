@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/coffee_shop.dart';
 import '../providers/coffee_shop_provider.dart';
+import '../providers/theme_provider.dart';
 import '../widgets/add_visit_dialog.dart';
 
 class CoffeeShopDetailScreen extends StatefulWidget {
@@ -35,8 +36,8 @@ class _CoffeeShopDetailScreenState extends State<CoffeeShopDetailScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Consumer<CoffeeShopProvider>(
-        builder: (context, provider, child) {
+      body: Consumer2<CoffeeShopProvider, ThemeProvider>(
+        builder: (context, provider, themeProvider, child) {
           final coffeeShop = provider.getCoffeeShopById(widget.coffeeShop.id) ?? widget.coffeeShop;
 
           return CustomScrollView(
@@ -60,8 +61,8 @@ class _CoffeeShopDetailScreenState extends State<CoffeeShopDetailScreen>
           );
         },
       ),
-      floatingActionButton: Consumer<CoffeeShopProvider>(
-        builder: (context, provider, child) {
+      floatingActionButton: Consumer2<CoffeeShopProvider, ThemeProvider>(
+        builder: (context, provider, themeProvider, child) {
           final coffeeShop = provider.getCoffeeShopById(widget.coffeeShop.id) ?? widget.coffeeShop;
 
           if (coffeeShop.trackingStatus == CafeTrackingStatus.notTracked) {
@@ -69,7 +70,7 @@ class _CoffeeShopDetailScreenState extends State<CoffeeShopDetailScreen>
               onPressed: () => _showAddToTrackingDialog(context, coffeeShop),
               icon: const Icon(Icons.add),
               label: const Text('Add to List'),
-              backgroundColor: const Color(0xFF6F4E37),
+              backgroundColor: themeProvider.accentColor,
             );
           } else if (coffeeShop.trackingStatus == CafeTrackingStatus.wantToVisit) {
             return FloatingActionButton.extended(
@@ -214,7 +215,7 @@ class _CoffeeShopDetailScreenState extends State<CoffeeShopDetailScreen>
             children: [
               const Icon(
                 Icons.location_on_outlined,
-                color: Color(0xFF6F4E37),
+                color: Colors.transparent,
                 size: 20,
               ),
               const SizedBox(width: 8),
@@ -235,7 +236,7 @@ class _CoffeeShopDetailScreenState extends State<CoffeeShopDetailScreen>
               children: [
                 const Icon(
                   Icons.directions_walk,
-                  color: Color(0xFF6F4E37),
+                  color: Colors.transparent,
                   size: 20,
                 ),
                 const SizedBox(width: 8),
@@ -243,7 +244,7 @@ class _CoffeeShopDetailScreenState extends State<CoffeeShopDetailScreen>
                   '${(coffeeShop.distance / 1000).toStringAsFixed(1)} km away',
                   style: GoogleFonts.inter(
                     fontSize: 14,
-                    color: const Color(0xFF6F4E37),
+                    color: Colors.transparent,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -408,16 +409,20 @@ class _CoffeeShopDetailScreenState extends State<CoffeeShopDetailScreen>
   }
 
   Widget _buildTabBar() {
-    return TabBar(
-      controller: _tabController,
-      labelColor: const Color(0xFF6F4E37),
-      unselectedLabelColor: Colors.grey,
-      indicatorColor: const Color(0xFF6F4E37),
-      tabs: const [
-        Tab(text: 'Overview'),
-        Tab(text: 'Reviews'),
-        Tab(text: 'Photos'),
-      ],
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return TabBar(
+          controller: _tabController,
+          labelColor: themeProvider.accentColor,
+          unselectedLabelColor: themeProvider.secondaryTextColor,
+          indicatorColor: themeProvider.accentColor,
+          tabs: const [
+            Tab(text: 'Overview'),
+            Tab(text: 'Reviews'),
+            Tab(text: 'Photos'),
+          ],
+        );
+      },
     );
   }
 
@@ -480,7 +485,7 @@ class _CoffeeShopDetailScreenState extends State<CoffeeShopDetailScreen>
               Row(
                 children: [
                   CircleAvatar(
-                    backgroundColor: const Color(0xFF6F4E37),
+                    backgroundColor: Colors.transparent,
                     child: Text(
                       review.userName[0].toUpperCase(),
                       style: GoogleFonts.inter(
@@ -618,46 +623,50 @@ class _CoffeeShopDetailScreenState extends State<CoffeeShopDetailScreen>
       openingHours.sunday,
     ];
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardTheme.color,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Theme.of(context).dividerColor),
-      ),
-      child: Column(
-        children: List.generate(7, (index) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  days[index],
-                  style: GoogleFonts.inter(
-                    fontWeight: days[index] == _getTodayName()
-                        ? FontWeight.w600
-                        : FontWeight.normal,
-                    color: days[index] == _getTodayName()
-                        ? const Color(0xFF6F4E37)
-                        : Theme.of(context).textTheme.titleLarge?.color ?? Colors.black,
-                  ),
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardTheme.color,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Theme.of(context).dividerColor),
+          ),
+          child: Column(
+            children: List.generate(7, (index) {
+              final isToday = days[index] == _getTodayName();
+              return Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: isToday ? 12 : 8,
                 ),
-                Text(
-                  hours[index],
-                  style: GoogleFonts.inter(
-                    fontWeight: days[index] == _getTodayName()
-                        ? FontWeight.w600
-                        : FontWeight.normal,
-                    color: days[index] == _getTodayName()
-                        ? const Color(0xFF6F4E37)
-                        : Colors.grey[700],
-                  ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      days[index],
+                      style: GoogleFonts.inter(
+                        fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
+                        color: isToday
+                            ? themeProvider.accentColor
+                            : themeProvider.primaryTextColor,
+                      ),
+                    ),
+                    Text(
+                      hours[index],
+                      style: GoogleFonts.inter(
+                        fontWeight: isToday ? FontWeight.w700 : FontWeight.w400,
+                        color: isToday
+                            ? themeProvider.accentColor
+                            : themeProvider.secondaryTextColor,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          );
-        }),
-      ),
+              );
+            }),
+          ),
+        );
+      },
     );
   }
 
@@ -671,13 +680,13 @@ class _CoffeeShopDetailScreenState extends State<CoffeeShopDetailScreen>
       child: Column(
         children: [
           ListTile(
-            leading: const Icon(Icons.calendar_today, color: Color(0xFF6F4E37)),
+            leading: Consumer<ThemeProvider>(builder: (context, themeProvider, child) => Icon(Icons.calendar_today, color: themeProvider.accentColor)),
             title: Text('Make Reservation'),
             onTap: () => _makeReservation(coffeeShop.phoneNumber),
           ),
           const Divider(height: 1),
           ListTile(
-            leading: const Icon(Icons.language, color: Color(0xFF6F4E37)),
+            leading: Consumer<ThemeProvider>(builder: (context, themeProvider, child) => Icon(Icons.language, color: themeProvider.accentColor)),
             title: Text('Visit Website'),
             onTap: () => _launchWebsite(coffeeShop.website),
           ),
@@ -733,7 +742,7 @@ class _CoffeeShopDetailScreenState extends State<CoffeeShopDetailScreen>
           return Column(
             children: [
               ListTile(
-                leading: Icon(icon, color: const Color(0xFF6F4E37)),
+                leading: Consumer<ThemeProvider>(builder: (context, themeProvider, child) => Icon(icon, color: themeProvider.accentColor)),
                 title: Text(label),
                 subtitle: Text(
                   platform.toLowerCase(),

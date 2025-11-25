@@ -3,10 +3,11 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/coffee_shop_provider.dart';
+import '../providers/theme_provider.dart';
 import '../models/coffee_shop.dart';
 import '../widgets/add_visit_dialog.dart';
 import 'coffee_shop_detail_screen.dart';
-import 'map_screen_safe.dart';
+import 'home_screen.dart';
 
 class ListScreen extends StatefulWidget {
   const ListScreen({super.key});
@@ -59,16 +60,28 @@ class _ListScreenState extends State<ListScreen> with TickerProviderStateMixin {
             ],
           ),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
-          indicatorColor: Colors.white,
-          tabs: const [
-            Tab(text: 'Want to Visit'),
-            Tab(text: 'Visited'),
-            Tab(text: 'Discover'),
-          ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(kToolbarHeight),
+          child: Consumer<ThemeProvider>(
+            builder: (context, themeProvider, child) {
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: TabBar(
+                  controller: _tabController,
+                  labelColor: themeProvider.primaryTextColor,
+                  unselectedLabelColor: themeProvider.secondaryTextColor,
+                  indicatorColor: themeProvider.accentColor,
+                  labelStyle: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                  indicatorWeight: 3,
+                  tabs: const [
+                    Tab(text: 'Want to Visit'),
+                    Tab(text: 'Visited'),
+                    Tab(text: 'Discover'),
+                  ],
+                ),
+              );
+            },
+          ),
         ),
       ),
       body: TabBarView(
@@ -85,13 +98,13 @@ class _ListScreenState extends State<ListScreen> with TickerProviderStateMixin {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const MapScreenSafe(),
+                  builder: (context) => const HomeScreen(),
                 ),
               );
             },
             icon: const Icon(Icons.add),
             label: const Text('Add Cafe'),
-            backgroundColor: const Color(0xFF6F4E37),
+            backgroundColor: Colors.blue,
           )
         : null,
     );
@@ -211,14 +224,14 @@ class _ListScreenState extends State<ListScreen> with TickerProviderStateMixin {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const MapScreenSafe(),
+                    builder: (context) => const HomeScreen(),
                   ),
                 );
               },
               icon: const Icon(Icons.explore),
               label: const Text('Explore Cafes'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6F4E37),
+                backgroundColor: Colors.blue,
                 foregroundColor: Colors.white,
               ),
             ),
@@ -464,13 +477,17 @@ class _ListScreenState extends State<ListScreen> with TickerProviderStateMixin {
                 color: Colors.orange[400],
               ),
               const SizedBox(width: 4),
-              Text(
-                'Your rating: ${visitData.personalRating!.toStringAsFixed(1)}',
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  color: const Color(0xFF6F4E37),
-                  fontWeight: FontWeight.w500,
-                ),
+              Consumer<ThemeProvider>(
+                builder: (context, themeProvider, child) {
+                  return Text(
+                    'Your rating: ${visitData.personalRating!.toStringAsFixed(1)}',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: themeProvider.accentColor,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  );
+                },
               ),
             ],
           ),
@@ -479,19 +496,27 @@ class _ListScreenState extends State<ListScreen> with TickerProviderStateMixin {
         if (visitData.visitDates.isNotEmpty) ...[
           Row(
             children: [
-              Icon(
-                Icons.calendar_today,
-                size: 14,
-                color: const Color(0xFF6F4E37),
+              Consumer<ThemeProvider>(
+                builder: (context, themeProvider, child) {
+                  return Icon(
+                    Icons.calendar_today,
+                    size: 14,
+                    color: themeProvider.accentColor,
+                  );
+                },
               ),
               const SizedBox(width: 4),
-              Text(
-                'Visited ${visitData.visitDates.length} time${visitData.visitDates.length > 1 ? 's' : ''}',
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  color: const Color(0xFF6F4E37),
-                  fontWeight: FontWeight.w500,
-                ),
+              Consumer<ThemeProvider>(
+                builder: (context, themeProvider, child) {
+                  return Text(
+                    'Visited ${visitData.visitDates.length} time${visitData.visitDates.length > 1 ? 's' : ''}',
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: themeProvider.accentColor,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  );
+                },
               ),
             ],
           ),

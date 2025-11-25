@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'screens/map_screen_safe.dart';
+import 'screens/home_screen.dart';
 import 'screens/list_screen.dart';
 import 'screens/favorites_screen.dart';
 import 'screens/profile_screen.dart';
@@ -27,9 +27,7 @@ class CoffeeFinderApp extends StatelessWidget {
           return MaterialApp(
             title: 'Coffee Finder',
             debugShowCheckedModeBanner: false,
-            theme: themeProvider.lightTheme,
-            darkTheme: themeProvider.darkTheme,
-            themeMode: themeProvider.themeMode,
+            theme: themeProvider.themeData,
             home: const MainScreen(),
           );
         },
@@ -49,10 +47,17 @@ class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
   final List<Widget> _screens = [
-    const MapScreenSafe(),
+    const HomeScreen(),
     const ListScreen(),
     const FavoritesScreen(),
     const ProfileScreen(),
+  ];
+
+  final List<String> _titles = [
+    'Coffee Finder',
+    'My List',
+    'Favorites',
+    'Profile',
   ];
 
   @override
@@ -65,52 +70,59 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: _screens[_currentIndex],
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return Scaffold(
+          body: _screens[_currentIndex],
+          bottomNavigationBar: Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 10,
+                  offset: const Offset(0, -2),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: (index) {
-            setState(() {
-              _currentIndex = index;
-            });
-          },
-          type: BottomNavigationBarType.fixed,
-          elevation: 0,
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined),
-              activeIcon: Icon(Icons.home),
-              label: 'Home',
+            child: BottomNavigationBar(
+              currentIndex: _currentIndex,
+              onTap: (index) {
+                setState(() {
+                  _currentIndex = index;
+                });
+              },
+              type: BottomNavigationBarType.fixed,
+              elevation: 0,
+              backgroundColor: Colors.transparent,
+              selectedItemColor: themeProvider.accentColor,
+              unselectedItemColor: themeProvider.secondaryTextColor,
+              items: [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.home_outlined),
+                  activeIcon: Icon(Icons.home),
+                  label: 'Home',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.list_outlined),
+                  activeIcon: Icon(Icons.list),
+                  label: 'My List',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.favorite_outline),
+                  activeIcon: Icon(Icons.favorite),
+                  label: 'Favorites',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.person_outline),
+                  activeIcon: Icon(Icons.person),
+                  label: 'Profile',
+                ),
+              ],
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.list_outlined),
-              activeIcon: Icon(Icons.list),
-              label: 'My List',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.favorite_outline),
-              activeIcon: Icon(Icons.favorite),
-              label: 'Favorites',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
-              label: 'Profile',
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
