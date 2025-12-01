@@ -1,3 +1,6 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../services/simple_places_service.dart';
+
 class CoffeeShop {
   final String id;
   final String name;
@@ -131,12 +134,19 @@ class CoffeeShop {
     // Parse photos
     List<String> photos = [];
     if (json['photos'] != null) {
+      final apiKey = SimplePlacesService.apiKey ?? dotenv.env['GOOGLE_PLACES_API_KEY'];
       photos = (json['photos'] as List)
           .where((photo) => photo['photo_reference'] != null)
-          .map((photo) => 'https://maps.googleapis.com/maps/api/place/photo'
-              '?maxwidth=800'
-              '&maxheight=600'
-              '&photoreference=${photo['photo_reference']}')
+          .map((photo) {
+            final photoUrl = 'https://maps.googleapis.com/maps/api/place/photo'
+                '?maxwidth=800'
+                '&maxheight=600'
+                '&photoreference=${photo['photo_reference']}';
+            if (apiKey != null && apiKey.isNotEmpty) {
+              return '$photoUrl&key=$apiKey';
+            }
+            return photoUrl;
+          })
           .cast<String>()
           .toList();
     }

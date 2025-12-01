@@ -21,8 +21,25 @@ Future<void> main() async {
   try {
     await dotenv.load(fileName: ".env");
     print('✅ Environment variables loaded');
+
+    // Debug: Print loaded API keys (masked for security)
+    final placesKey = dotenv.env['GOOGLE_PLACES_API_KEY'];
+    final firebaseKey = dotenv.env['FIREBASE_API_KEY'];
+
+    if (placesKey != null && placesKey.isNotEmpty) {
+      print('✅ Google Places API key loaded (${placesKey.substring(0, 10)}...)');
+    } else {
+      print('❌ Google Places API key not found or empty');
+    }
+
+    if (firebaseKey != null && firebaseKey.isNotEmpty) {
+      print('✅ Firebase API key loaded (${firebaseKey.substring(0, 10)}...)');
+    } else {
+      print('⚠️ Firebase API key not found or empty');
+    }
   } catch (e) {
-    print('⚠️ Warning: Failed to load .env file: $e');
+    print('❌ Failed to load .env file: $e');
+    print('⚠️ Make sure .env file exists and is in the correct location');
   }
 
   // Initialize Firebase second (after env is loaded)
@@ -45,9 +62,15 @@ Future<void> main() async {
   // Initialize Places service last (after Firebase)
   try {
     SimplePlacesService.initialize();
-    print('✅ Places API initialized');
+
+    // Verify initialization
+    if (SimplePlacesService.isInitialized) {
+      print('✅ Places API initialized successfully');
+    } else {
+      print('⚠️ Places API initialization failed - no API key available');
+    }
   } catch (e) {
-    print('⚠️ Warning: Places API initialization failed: $e');
+    print('❌ Places API initialization failed: $e');
     print('🔄 Using offline data fallback...');
   }
 

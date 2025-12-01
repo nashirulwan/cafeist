@@ -39,7 +39,13 @@ class SimplePlacesService {
   static bool get isInitialized => _apiKey != null && _apiKey!.isNotEmpty;
 
   // Get API key for internal use
-  static String? get apiKey => _apiKey;
+  static String? get apiKey {
+    if (_apiKey == null || _apiKey!.isEmpty) {
+      print('⚠️ API Key not available, attempting to reload from .env');
+      initialize(); // Try to reinitialize
+    }
+    return _apiKey;
+  }
 
   /// Mencari kafe dengan text search
   Future<List<CoffeeShop>> searchCafes(String query) async {
@@ -208,11 +214,17 @@ class SimplePlacesService {
   String? _getPhotoUrl(String? photoReference) {
     if (photoReference == null) return null;
 
+    final apiKey = _apiKey ?? dotenv.env['GOOGLE_PLACES_API_KEY'];
+    if (apiKey == null || apiKey.isEmpty) {
+      print('⚠️ Cannot create photo URL - no API key available');
+      return null;
+    }
+
     return 'https://maps.googleapis.com/maps/api/place/photo'
         '?maxwidth=800'
         '&maxheight=600'
         '&photoreference=$photoReference'
-        '&key=${_apiKey!}';
+        '&key=$apiKey';
   }
 
   OpeningHours _getDefaultOpeningHours() {
