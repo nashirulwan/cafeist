@@ -834,7 +834,7 @@ class _CoffeeShopDetailScreenState extends State<CoffeeShopDetailScreen>
 
   // Tracking functionality
   void _showAddToTrackingDialog(BuildContext context, CoffeeShop coffeeShop) async {
-    final result = await showDialog<String>(
+    final result = await showDialog<dynamic>(
       context: context,
       builder: (context) => AddVisitDialog(coffeeShop: coffeeShop),
     );
@@ -853,8 +853,24 @@ class _CoffeeShopDetailScreenState extends State<CoffeeShopDetailScreen>
             backgroundColor: Colors.blue,
           ),
         );
-      } else if (result == 'visited') {
-        _showVisitDetailsDialog(context, coffeeShop);
+      } else if (result is Map<String, dynamic>) {
+        // Handle visited case with the map data directly
+        provider.markAsVisited(
+          coffeeShop.id,
+          rating: result['personalRating'],
+          note: result['privateReview'],
+          visitDates: result['visitDates'],
+        );
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Marked as visited!',
+              style: GoogleFonts.inter(),
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
       }
     }
   }
@@ -873,8 +889,8 @@ class _CoffeeShopDetailScreenState extends State<CoffeeShopDetailScreen>
       final provider = context.read<CoffeeShopProvider>();
       provider.markAsVisited(
         coffeeShop.id,
-        personalRating: result['personalRating'],
-        privateReview: result['privateReview'],
+        rating: result['personalRating'],
+        note: result['privateReview'],
         visitDates: result['visitDates'],
       );
 
@@ -901,11 +917,14 @@ class _CoffeeShopDetailScreenState extends State<CoffeeShopDetailScreen>
 
     if (result != null) {
       final provider = context.read<CoffeeShopProvider>();
+      final visitData = VisitData(
+        personalRating: result['personalRating']?.toDouble(),
+        privateReview: result['privateReview'],
+        visitDates: result['visitDates'] ?? [DateTime.now()],
+      );
       provider.updateVisitData(
         coffeeShop.id,
-        personalRating: result['personalRating'],
-        privateReview: result['privateReview'],
-        visitDates: result['visitDates'],
+        visitData,
       );
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -928,7 +947,10 @@ class _CoffeeShopDetailScreenState extends State<CoffeeShopDetailScreen>
 
     if (result != null) {
       final provider = context.read<CoffeeShopProvider>();
-      provider.addVisitDate(coffeeShop.id, result);
+      final visitData = VisitData(
+        visitDates: [result],
+      );
+      provider.addVisitDate(coffeeShop.id, visitData);
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

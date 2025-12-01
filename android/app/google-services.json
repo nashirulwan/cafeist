@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "510769430776",
+    "project_id": "cafeist-7a684",
+    "storage_bucket": "cafeist-7a684.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:510769430776:android:8dd2cc7edf1ea2d99e3b0d",
+        "android_client_info": {
+          "package_name": "com.nashiru.cafeist"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "510769430776-or1tsi2i22sopacgv9su6reasu9df8ul.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCjMXoQ27VQotN_nzWIbaxbxOmDvtnwO2w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "510769430776-or1tsi2i22sopacgv9su6reasu9df8ul.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

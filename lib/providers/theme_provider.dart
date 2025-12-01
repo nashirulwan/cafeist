@@ -79,6 +79,20 @@ class ThemeProvider extends ChangeNotifier {
   ThemeData get lightTheme => _morningTheme;
   ThemeData get darkTheme => _eveningTheme;
 
+  // Background color getter
+  Color get backgroundColor {
+    switch (_currentTheme) {
+      case CoffeeTheme.morning:
+        return const Color(0xFFFFFEF7); // Warm cream
+      case CoffeeTheme.evening:
+        return const Color(0xFF1E1B4B); // Elegant dark violet
+      case CoffeeTheme.sunset:
+        return const Color(0xFFFEF3F2); // Warm pink background
+      case CoffeeTheme.midnight:
+        return const Color(0xFF0F172A); // Elegant dark blue-black
+    }
+  }
+
   // Dynamic color getters based on current theme
   Color get primaryTextColor {
     switch (_currentTheme) {

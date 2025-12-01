@@ -1,14 +1,56 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'screens/home_screen.dart';
 import 'screens/list_screen.dart';
 import 'screens/favorites_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/auth_screen.dart';
 import 'providers/coffee_shop_provider.dart';
 import 'providers/theme_provider.dart';
+import 'providers/auth_provider.dart';
+import 'services/simple_places_service.dart';
+import 'services/firebase_service.dart';
+import 'services/auth_service.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Load environment variables first
+  try {
+    await dotenv.load(fileName: ".env");
+    print('✅ Environment variables loaded');
+  } catch (e) {
+    print('⚠️ Warning: Failed to load .env file: $e');
+  }
+
+  // Initialize Firebase second (after env is loaded)
+  try {
+    await FirebaseService.initialize();
+    print('✅ Firebase initialized');
+  } catch (e) {
+    print('⚠️ Warning: Firebase initialization failed: $e');
+    print('🔄 Continuing without Firebase...');
+  }
+
+  // Initialize Google Sign-In
+  try {
+    AuthService.initializeGoogleSignIn();
+    print('✅ Google Sign-In initialized');
+  } catch (e) {
+    print('⚠️ Warning: Google Sign-In initialization failed: $e');
+  }
+
+  // Initialize Places service last (after Firebase)
+  try {
+    SimplePlacesService.initialize();
+    print('✅ Places API initialized');
+  } catch (e) {
+    print('⚠️ Warning: Places API initialization failed: $e');
+    print('🔄 Using offline data fallback...');
+  }
+
   runApp(const CoffeeFinderApp());
 }
 
@@ -19,16 +61,17 @@ class CoffeeFinderApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => CoffeeShopProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
-      child: Consumer<ThemeProvider>(
-        builder: (context, themeProvider, child) {
+      child: Consumer2<AuthProvider, ThemeProvider>(
+        builder: (context, authProvider, themeProvider, child) {
           return MaterialApp(
-            title: 'Coffee Finder',
+            title: 'Cafeist',
             debugShowCheckedModeBanner: false,
             theme: themeProvider.themeData,
-            home: const MainScreen(),
+            home: authProvider.isLoggedIn ? const MainScreen() : const AuthScreen(),
           );
         },
       ),

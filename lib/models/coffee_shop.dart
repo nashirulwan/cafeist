@@ -84,6 +84,117 @@ class CoffeeShop {
       socialMedia: socialMedia ?? this.socialMedia,
     );
   }
+
+  factory CoffeeShop.fromJson(Map<String, dynamic> json) {
+    // Parse reviews
+    List<Review> reviews = [];
+    if (json['reviews'] != null) {
+      reviews = (json['reviews'] as List).map((review) => Review(
+        id: review['id']?.toString() ?? '',
+        userName: review['userName'] ?? 'Anonymous',
+        rating: (review['rating'] as num?)?.toDouble() ?? 0.0,
+        comment: review['text'] ?? review['comment'] ?? '',
+        date: review['time'] != null
+            ? DateTime.fromMillisecondsSinceEpoch(review['time'])
+            : DateTime.now(),
+        photos: review['photos'] != null
+            ? List<String>.from(review['photos'])
+            : [],
+      )).toList();
+    }
+
+    // Parse opening hours
+    OpeningHours openingHours;
+    if (json['opening_hours'] != null) {
+      final weekdayText = json['opening_hours']['weekday_text'] as List? ?? [];
+      openingHours = OpeningHours(
+        monday: _extractDayHours(weekdayText, 0),
+        tuesday: _extractDayHours(weekdayText, 1),
+        wednesday: _extractDayHours(weekdayText, 2),
+        thursday: _extractDayHours(weekdayText, 3),
+        friday: _extractDayHours(weekdayText, 4),
+        saturday: _extractDayHours(weekdayText, 5),
+        sunday: _extractDayHours(weekdayText, 6),
+      );
+    } else {
+      openingHours = OpeningHours(
+        monday: '07:00 – 22:00',
+        tuesday: '07:00 – 22:00',
+        wednesday: '07:00 – 22:00',
+        thursday: '07:00 – 22:00',
+        friday: '07:00 – 22:00',
+        saturday: '08:00 – 23:00',
+        sunday: '08:00 – 23:00',
+      );
+    }
+
+    // Parse photos
+    List<String> photos = [];
+    if (json['photos'] != null) {
+      photos = (json['photos'] as List)
+          .where((photo) => photo['photo_reference'] != null)
+          .map((photo) => 'https://maps.googleapis.com/maps/api/place/photo'
+              '?maxwidth=800'
+              '&maxheight=600'
+              '&photoreference=${photo['photo_reference']}'
+              '&key=AIzaSyBll9756jjbWWStoaxgUHjtEv90FOmCnl0')
+          .cast<String>()
+          .toList();
+    }
+
+    // Get location
+    final geometry = json['geometry'] as Map<String, dynamic>?;
+    final location = geometry?['location'] as Map<String, dynamic>?;
+
+    return CoffeeShop(
+      id: json['place_id'] as String? ?? json['id'] as String? ?? '',
+      name: json['name'] as String? ?? 'Unknown Cafe',
+      description: _getDescription(json),
+      address: json['vicinity'] as String? ?? json['formatted_address'] as String? ?? '',
+      phoneNumber: json['formatted_phone_number'] as String? ?? '',
+      website: json['website'] as String? ?? '',
+      latitude: location?['lat']?.toDouble() ?? (json['latitude'] as num?)?.toDouble() ?? 0.0,
+      longitude: location?['lng']?.toDouble() ?? (json['longitude'] as num?)?.toDouble() ?? 0.0,
+      rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
+      reviewCount: json['user_ratings_total'] as int? ?? json['review_count'] as int? ?? 0,
+      photos: photos,
+      reviews: reviews,
+      openingHours: openingHours,
+      distance: 0.0,
+      isOpen: json['opening_hours']?['open_now'] as bool? ?? true,
+      isFavorite: false,
+      trackingStatus: CafeTrackingStatus.notTracked,
+      visitData: null,
+      socialMedia: null,
+    );
+  }
+
+  static String _getDescription(Map<String, dynamic> json) {
+    final types = json['types'] as List? ?? [];
+    final description = <String>[];
+
+    if (types.contains('cafe')) description.add('Cafe');
+    if (types.contains('coffee_shop')) description.add('Coffee Shop');
+    if (types.contains('restaurant')) description.add('Restaurant');
+    if (types.contains('bakery')) description.add('Bakery');
+
+    if (description.isEmpty) {
+      description.add('Coffee Shop');
+    }
+
+    return description.join(' • ');
+  }
+
+  static String _extractDayHours(List weekdayText, int dayIndex) {
+    if (dayIndex < weekdayText.length) {
+      final dayText = weekdayText[dayIndex].toString();
+      final parts = dayText.split(':');
+      if (parts.length > 1) {
+        return parts.sublist(1).join(':').trim();
+      }
+    }
+    return '09:00 – 21:00';
+  }
 }
 
 class Review {
@@ -197,7 +308,7 @@ class VisitData {
 
   factory VisitData.fromJson(Map<String, dynamic> json) {
     return VisitData(
-      personalRating: json['personalRating']?.toDouble(),
+      personalRating: _parseRating(json['personalRating']),
       privateReview: json['privateReview'],
       visitDates: (json['visitDates'] as List<dynamic>?)
           ?.map((date) => DateTime.parse(date.toString()))
@@ -205,5 +316,40 @@ class VisitData {
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt: DateTime.parse(json['updatedAt']),
     );
+  }
+
+  static double? _parseRating(dynamic value) {
+    if (value == null) return null;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is num) return value.toDouble();
+    // Handle string case (for JSON string values)
+    if (value is String) {
+      try {
+        return double.tryParse(value);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  // Safe rating extraction that skips problematic JSON parsing
+  static double? extractRatingFromVisitData(Map<String, dynamic>? visitData) {
+    if (visitData == null) return null;
+
+    final rating = visitData!['personalRating'];
+    if (rating == null) return null;
+    if (rating is double) return rating;
+    if (rating is int) return rating.toDouble();
+    if (rating is num) return rating.toDouble();
+    if (rating is String) {
+      try {
+        return double.tryParse(rating.toString());
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
   }
 }

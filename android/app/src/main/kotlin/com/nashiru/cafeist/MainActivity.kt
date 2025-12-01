@@ -1,4 +1,4 @@
-package com.example.coffee_finder_app
+package com.nashiru.cafeist
 
 import io.flutter.embedding.android.FlutterActivity
 

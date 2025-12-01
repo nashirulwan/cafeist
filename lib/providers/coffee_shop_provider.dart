@@ -1,336 +1,568 @@
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
+import 'dart:math' as math;
+import 'dart:math';
 import 'package:flutter/services.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 import '../models/coffee_shop.dart';
-import '../services/location_service.dart';
+import '../services/simple_places_service.dart';
+import '../services/personal_tracking_service.dart';
 
-class CoffeeShopProvider with ChangeNotifier {
+class CoffeeShopProvider extends ChangeNotifier {
+  // Private fields
   List<CoffeeShop> _coffeeShops = [];
   List<CoffeeShop> _nearbyCoffeeShops = [];
   bool _isLoading = false;
+  bool _isLoadingMore = false;
+  bool _hasMoreCafes = true;
+  int _currentLimit = 20; // Show 20 cafes first
   String? _error;
   String? _searchQuery;
   double _userLatitude = 0.0;
   double _userLongitude = 0.0;
+  String _userLocation = 'Getting location...'; // Real-time GPS location
+  String _activeFilter = 'all'; // 'all', 'nearby', 'topRated', 'openNow'
 
+  // Service instances
+  final SimplePlacesService _placesService = SimplePlacesService();
+  final PersonalTrackingService _trackingService = PersonalTrackingService();
+
+  // Public getters
   List<CoffeeShop> get coffeeShops => _coffeeShops;
   List<CoffeeShop> get nearbyCoffeeShops => _nearbyCoffeeShops;
   bool get isLoading => _isLoading;
+  bool get isLoadingMore => _isLoadingMore;
+  bool get hasMoreCafes => _hasMoreCafes;
+  int get currentLimit => _currentLimit;
   String? get error => _error;
   String? get searchQuery => _searchQuery;
+  double get userLatitude => _userLatitude;
+  double get userLongitude => _userLongitude;
+  String get userLocation => _userLocation;
+  String get activeFilter => _activeFilter;
+
+  // Get user region as formatted string
+  String get userRegion {
+    if (_userLocation == 'Getting location...' || _userLocation == 'Location disabled') {
+      return 'Indonesia';
+    }
+    return _userLocation;
+  }
 
   CoffeeShopProvider() {
+    // Initialize Places API first
+    SimplePlacesService.initialize();
     _initializeCoffeeShops();
+    // Load tracking data from persistent storage AFTER coffee shops are loaded
+    _loadTrackingDataFromPersistentStorage();
+    _updateUserLocation();
   }
 
+  // Initialize method that can be called after construction
+  Future<void> initialize() async {
+    await _loadTrackingDataFromPersistentStorage();
+    await _updateUserLocation();
+  }
+
+  // Initialize with offline JSON data as fallback
   Future<void> _initializeCoffeeShops() async {
+    _setLoading(true);
     try {
-      // Load JSON file from assets
-      final String jsonString = await rootBundle.loadString('assets/data/coffee_shops.json');
-      final List<dynamic> jsonData = json.decode(jsonString);
+      // Try to get real-time location first
+      await _updateUserLocation();
 
-      // Convert JSON to CoffeeShop objects
-      _coffeeShops = jsonData.map((json) => _parseCoffeeShop(json)).toList();
+      // If we have user location, try nearby search first
+      if (_userLatitude != 0.0 && _userLongitude != 0.0) {
+        await _loadNearbyCoffeeShops();
+      } else {
+        // Fallback to JSON data
+        await _useJsonDataWithDistance();
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error initializing coffee shops: $e');
+      }
+      // Fallback to JSON data if all else fails
+      await _useJsonDataWithDistance();
+    } finally {
+      _setLoading(false);
+    }
+  }
 
-      _nearbyCoffeeShops = List.from(_coffeeShops);
+  // Update user location using GPS
+  Future<void> _updateUserLocation() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        _userLocation = 'Location disabled';
+        _userLatitude = 0.0;
+        _userLongitude = 0.0;
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          _userLocation = 'Location permission denied';
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        _userLocation = 'Location permission permanently denied';
+        return;
+      }
+
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      _userLatitude = position.latitude;
+      _userLongitude = position.longitude;
+
+      // Get address from coordinates (reverse geocoding)
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+
+      if (placemarks.isNotEmpty) {
+        Placemark place = placemarks[0];
+        String city = place.locality ?? place.subAdministrativeArea ?? '';
+        String sublocality = place.subLocality ?? place.name ?? '';
+
+        if (sublocality.isNotEmpty && city.isNotEmpty) {
+          _userLocation = '$sublocality, $city';
+        } else if (city.isNotEmpty) {
+          _userLocation = city;
+        } else if (sublocality.isNotEmpty) {
+          _userLocation = sublocality;
+        } else {
+          _userLocation = 'Unknown location';
+        }
+      } else {
+        _userLocation = 'Location found';
+      }
+
       notifyListeners();
     } catch (e) {
-      // If JSON loading fails, use empty list
       if (kDebugMode) {
-        print('Error loading coffee shops from JSON: $e');
+        print('Error getting location: $e');
       }
-      _coffeeShops = [];
-      _nearbyCoffeeShops = [];
+      _userLocation = 'Location error';
       notifyListeners();
     }
   }
 
-  CoffeeShop _parseCoffeeShop(Map<String, dynamic> json) {
-    // Parse opening hours
-    final openingHoursJson = json['openingHours'] as Map<String, dynamic>;
-    final openingHours = OpeningHours(
-      monday: openingHoursJson['monday'] ?? '',
-      tuesday: openingHoursJson['tuesday'] ?? '',
-      wednesday: openingHoursJson['wednesday'] ?? '',
-      thursday: openingHoursJson['thursday'] ?? '',
-      friday: openingHoursJson['friday'] ?? '',
-      saturday: openingHoursJson['saturday'] ?? '',
-      sunday: openingHoursJson['sunday'] ?? '',
-    );
-
-    // Parse reviews
-    final reviewsJson = json['reviews'] as List<dynamic>? ?? [];
-    final reviews = reviewsJson.map((reviewJson) {
-      return Review(
-        id: reviewJson['id'] ?? '',
-        userName: reviewJson['userName'] ?? '',
-        rating: (reviewJson['rating'] ?? 0.0).toDouble(),
-        comment: reviewJson['comment'] ?? '',
-        date: DateTime.parse(reviewJson['date'] ?? DateTime.now().toIso8601String()),
-        photos: (reviewJson['photos'] as List<dynamic>?)?.cast<String>() ?? [],
-      );
-    }).toList();
-
-    // Parse visit data if exists
-    VisitData? visitData;
-    if (json['visitData'] != null) {
-      final visitJson = json['visitData'] as Map<String, dynamic>;
-      final visitDatesJson = visitJson['visitDates'] as List<dynamic>? ?? [];
-      visitData = VisitData(
-        personalRating: visitJson['personalRating']?.toDouble(),
-        privateReview: visitJson['privateReview'],
-        visitDates: visitDatesJson.map((date) => DateTime.parse(date)).toList(),
-        createdAt: DateTime.parse(visitJson['createdAt'] ?? DateTime.now().toIso8601String()),
-        updatedAt: DateTime.parse(visitJson['updatedAt'] ?? DateTime.now().toIso8601String()),
-      );
+  // Load nearby coffee shops using Google Places API
+  Future<void> _loadNearbyCoffeeShops({bool isLoadMore = false}) async {
+    if (_userLatitude == 0.0 || _userLongitude == 0.0) {
+      await _useJsonDataWithDistance();
+      return;
     }
 
-    // Parse tracking status
-    CafeTrackingStatus trackingStatus;
-    switch (json['trackingStatus']) {
-      case 'visited':
-        trackingStatus = CafeTrackingStatus.visited;
-        break;
-      case 'wantToVisit':
-        trackingStatus = CafeTrackingStatus.wantToVisit;
-        break;
-      default:
-        trackingStatus = CafeTrackingStatus.notTracked;
+    if (!isLoadMore) {
+      _setLoading(true);
+      _error = null;
+    } else {
+      _isLoadingMore = true;
+      notifyListeners();
     }
-
-    return CoffeeShop(
-      id: json['id'] ?? '',
-      name: json['name'] ?? '',
-      description: json['description'] ?? '',
-      address: json['address'] ?? '',
-      phoneNumber: json['phoneNumber'] ?? '',
-      website: json['website'] ?? '',
-      latitude: (json['latitude'] ?? 0.0).toDouble(),
-      longitude: (json['longitude'] ?? 0.0).toDouble(),
-      rating: (json['rating'] ?? 0.0).toDouble(),
-      reviewCount: json['reviewCount'] ?? 0,
-      photos: (json['photos'] as List<dynamic>?)?.cast<String>() ?? [],
-      reviews: reviews,
-      openingHours: openingHours,
-      distance: 0.0,
-      isOpen: true,
-      isFavorite: false,
-      trackingStatus: trackingStatus,
-      visitData: visitData,
-      socialMedia: (json['socialMedia'] as Map<String, dynamic>?)?.cast<String, String>(),
-    );
-  }
-
-  Future<void> updateNearbyCoffeeShops() async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
 
     try {
-      final position = await LocationService.getCurrentLocation();
-      if (position != null) {
-        _userLatitude = position.latitude;
-        _userLongitude = position.longitude;
+      // Check if Places API is available
+      if (!SimplePlacesService.isInitialized) {
+        throw Exception('Places API not initialized');
+      }
 
-        _nearbyCoffeeShops = _coffeeShops.map((shop) {
-          final distance = LocationService.calculateDistance(
+      final cafes = await _placesService.findNearbyCafes(
+        _userLatitude,
+        _userLongitude,
+        radius: 5000, // 5km radius for more results
+        limit: _currentLimit,
+      );
+
+      if (cafes.isNotEmpty) {
+        if (!isLoadMore) {
+          _coffeeShops = cafes;
+        } else {
+          _coffeeShops.addAll(cafes);
+        }
+
+        // Calculate distances for all cafes
+        _coffeeShops = _coffeeShops.map((cafe) {
+          final distance = Geolocator.distanceBetween(
             _userLatitude,
             _userLongitude,
-            shop.latitude,
-            shop.longitude,
+            cafe.latitude,
+            cafe.longitude,
           );
-          return shop.copyWith(distance: distance);
+          return cafe.copyWith(distance: distance);
         }).toList();
 
-        _nearbyCoffeeShops.sort((a, b) => a.distance.compareTo(b.distance));
+        // Sort by distance
+        _coffeeShops.sort((a, b) => a.distance.compareTo(b.distance));
+
+        _hasMoreCafes = cafes.length >= _currentLimit;
+      } else {
+        _hasMoreCafes = false;
       }
+
+      _applyActiveFilter();
     } catch (e) {
-      _error = 'Failed to get location';
+      if (kDebugMode) {
+        print('Error loading nearby cafes: $e');
+      }
+      _error = 'Failed to load nearby cafes: $e';
+
+      // Fallback to JSON data
+      if (!isLoadMore) {
+        await _useJsonDataWithDistance();
+      }
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      if (!isLoadMore) {
+        _setLoading(false);
+      } else {
+        _isLoadingMore = false;
+        notifyListeners();
+      }
     }
   }
 
-  void searchCoffeeShops(String query) {
-    _searchQuery = query;
-    _filterCoffeeShops();
+  // Load coffee shops from JSON asset with calculated distances
+  Future<void> _useJsonDataWithDistance() async {
+    try {
+      final String jsonString = await rootBundle.loadString('assets/data/coffee_shops.json');
+      final List<dynamic> jsonList = json.decode(jsonString);
+
+      _coffeeShops = jsonList.map((json) => CoffeeShop.fromJson(json)).toList();
+
+      // Randomize order for variety on each app restart
+      _coffeeShops.shuffle(Random());
+
+      // Calculate distances if we have user location
+      if (_userLatitude != 0.0 && _userLongitude != 0.0) {
+        _coffeeShops = _coffeeShops.map((cafe) {
+          final distance = Geolocator.distanceBetween(
+            _userLatitude,
+            _userLongitude,
+            cafe.latitude,
+            cafe.longitude,
+          );
+          return cafe.copyWith(distance: distance);
+        }).toList();
+
+        // Sort by distance
+        _coffeeShops.sort((a, b) => a.distance.compareTo(b.distance));
+      }
+
+      _applyActiveFilter();
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error loading JSON data: $e');
+      }
+      _error = 'Failed to load coffee data: $e';
+    }
   }
 
-  void _filterCoffeeShops() {
-    _nearbyCoffeeShops = _coffeeShops.where((shop) {
-      if (_searchQuery != null && _searchQuery!.isNotEmpty) {
-        return shop.name.toLowerCase().contains(_searchQuery!.toLowerCase()) ||
-               shop.description.toLowerCase().contains(_searchQuery!.toLowerCase()) ||
-               shop.address.toLowerCase().contains(_searchQuery!.toLowerCase());
-      }
-      return true;
-    }).toList();
+  // Apply the active filter to coffee shops
+  void _applyActiveFilter() {
+    switch (_activeFilter) {
+      case 'nearby':
+        final nearby = _coffeeShops.where((cafe) => cafe.distance <= 5000).toList(); // 5km in meters
+        _nearbyCoffeeShops = nearby.take(_currentLimit).toList();
+        _hasMoreCafes = _coffeeShops.length > _currentLimit && nearby.length >= _currentLimit;
+        break;
+      case 'topRated':
+        final topRated = _coffeeShops.where((cafe) => cafe.rating >= 4.0).toList();
+        _nearbyCoffeeShops = topRated.take(_currentLimit).toList();
+        _hasMoreCafes = _coffeeShops.length > _currentLimit && topRated.length >= _currentLimit;
+        break;
+      case 'openNow':
+        final openNow = _coffeeShops.where((cafe) => cafe.isOpen).toList();
+        _nearbyCoffeeShops = openNow.take(_currentLimit).toList();
+        _hasMoreCafes = _coffeeShops.length > _currentLimit && openNow.length >= _currentLimit;
+        break;
+      case 'all':
+      default:
+        _nearbyCoffeeShops = _coffeeShops.take(_currentLimit).toList();
+        _hasMoreCafes = _coffeeShops.length > _currentLimit;
+        break;
+    }
 
+    if (kDebugMode) {
+      print('Filter "$_activeFilter": ${_coffeeShops.length} total, showing ${_nearbyCoffeeShops.length}');
+    }
+  }
+
+  // Set loading state
+  void _setLoading(bool loading) {
+    _isLoading = loading;
     notifyListeners();
   }
 
-  void toggleFavorite(String coffeeShopId) {
-    final index = _coffeeShops.indexWhere((shop) => shop.id == coffeeShopId);
-    if (index != -1) {
-      _coffeeShops[index] = _coffeeShops[index].copyWith(
-        isFavorite: !_coffeeShops[index].isFavorite,
-      );
+  // Update nearby coffee shops (for pull-to-refresh)
+  Future<void> updateNearbyCoffeeShops({bool forceRefresh = false}) async {
+    await _updateUserLocation();
+    await _loadNearbyCoffeeShops();
+  }
 
-      final nearbyIndex = _nearbyCoffeeShops.indexWhere((shop) => shop.id == coffeeShopId);
-      if (nearbyIndex != -1) {
-        _nearbyCoffeeShops[nearbyIndex] = _nearbyCoffeeShops[nearbyIndex].copyWith(
-          isFavorite: _nearbyCoffeeShops[nearbyIndex].isFavorite,
-        );
+  // Search coffee shops by query
+  Future<void> searchCoffeeShops(String query) async {
+    if (query.trim().isEmpty) {
+      _searchQuery = null;
+      await _initializeCoffeeShops();
+      return;
+    }
+
+    _searchQuery = query;
+    _setLoading(true);
+    _error = null;
+
+    try {
+      // Check if Places API is available
+      if (!SimplePlacesService.isInitialized) {
+        // Fallback to local search in JSON data
+        await _useJsonDataWithDistance();
+        _coffeeShops = _coffeeShops.where((cafe) =>
+          cafe.name.toLowerCase().contains(query.toLowerCase()) ||
+          cafe.description.toLowerCase().contains(query.toLowerCase()) ||
+          cafe.address.toLowerCase().contains(query.toLowerCase())
+        ).toList();
+      } else {
+        // Use Google Places API for search
+        List<CoffeeShop> searchResults = [];
+
+        if (_userLatitude != 0.0 && _userLongitude != 0.0) {
+          searchResults = await _placesService.searchCafesWithFilters(
+            query: query,
+            userLat: _userLatitude,
+            userLng: _userLongitude,
+            maxResults: _currentLimit,
+          );
+        } else {
+          searchResults = await _placesService.searchCafes(query);
+        }
+
+        _coffeeShops = searchResults;
       }
 
+      _applyActiveFilter();
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error searching coffee shops: $e');
+      }
+      _error = 'Failed to search: $e';
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Load more coffee shops
+  Future<void> loadMoreCoffeeShops() async {
+    if (_isLoadingMore || !_hasMoreCafes) return;
+
+    _currentLimit += 20;
+    _isLoadingMore = true;
+    notifyListeners();
+
+    if (_userLatitude != 0.0 && _userLongitude != 0.0 && SimplePlacesService.isInitialized) {
+      await _loadNearbyCoffeeShops(isLoadMore: true);
+    } else {
+      _applyActiveFilter();
+      _isLoadingMore = false;
       notifyListeners();
     }
   }
 
-  List<CoffeeShop> getFavoriteCoffeeShops() {
+  // Set active filter
+  void setActiveFilter(String filter) {
+    _activeFilter = filter;
+    _currentLimit = 20; // Reset limit when changing filter
+    _applyActiveFilter();
+    notifyListeners();
+  }
+
+  // Add coffee shop to want-to-visit list
+  Future<void> addToWantToVisit(String coffeeShopId) async {
+    await _trackingService.addToWishlist(coffeeShopId);
+    await _loadTrackingDataFromPersistentStorage();
+  }
+
+  // Remove coffee shop from want-to-visit list
+  Future<void> removeFromWantToVisit(String coffeeShopId) async {
+    await _trackingService.removeFromWishlist(coffeeShopId);
+    await _loadTrackingDataFromPersistentStorage();
+  }
+
+  // Toggle coffee shop favorite status
+  Future<void> toggleFavorite(String coffeeShopId) async {
+    await _trackingService.toggleFavorite(coffeeShopId);
+    await _loadTrackingDataFromPersistentStorage();
+  }
+
+  // Get want-to-visit coffee shops (sync version for screens)
+  List<CoffeeShop> get wantToVisitCoffeeShops {
+    return _coffeeShops.where((shop) => shop.trackingStatus == CafeTrackingStatus.wantToVisit).toList();
+  }
+
+  // Get favorite coffee shops (sync version for screens)
+  List<CoffeeShop> get favoriteCoffeeShops {
     return _coffeeShops.where((shop) => shop.isFavorite).toList();
   }
 
-  CoffeeShop? getCoffeeShopById(String id) {
+  // Get visited coffee shops (sync version for screens)
+  List<CoffeeShop> get visitedCoffeeShops {
+    return _coffeeShops.where((shop) => shop.trackingStatus == CafeTrackingStatus.visited).toList();
+  }
+
+  // Get not tracked coffee shops (sync version for screens)
+  List<CoffeeShop> get notTrackedCoffeeShops {
+    return _coffeeShops.where((shop) => shop.trackingStatus == CafeTrackingStatus.notTracked).toList();
+  }
+
+  // Get want-to-visit coffee shops (async version)
+  Future<List<CoffeeShop>> getWantToVisitCoffeeShops() async {
+    final wishlistIds = await _trackingService.getWishlist();
+    return _coffeeShops.where((shop) => wishlistIds.contains(shop.id)).toList();
+  }
+
+  // Get favorite coffee shops (async version)
+  Future<List<CoffeeShop>> getFavoriteCoffeeShops() async {
+    final favoriteIds = await _trackingService.getFavorites();
+    return _coffeeShops.where((shop) => favoriteIds.contains(shop.id)).toList();
+  }
+
+  // Get visited coffee shops (async version)
+  Future<List<CoffeeShop>> getVisitedCoffeeShops() async {
+    final wishlistIds = await _trackingService.getWishlist();
+    final favoriteIds = await _trackingService.getFavorites();
+
+    // Visited shops are those with visit data
+    return _coffeeShops.where((shop) {
+      return shop.trackingStatus == CafeTrackingStatus.visited;
+    }).toList();
+  }
+
+  // Get not tracked coffee shops (async version)
+  Future<List<CoffeeShop>> getNotTrackedCoffeeShops() async {
+    final wishlistIds = await _trackingService.getWishlist();
+    final favoriteIds = await _trackingService.getFavorites();
+
+    final trackedIds = {...wishlistIds, ...favoriteIds};
+
+    return _coffeeShops.where((shop) =>
+      !trackedIds.contains(shop.id) &&
+      shop.trackingStatus == CafeTrackingStatus.notTracked
+    ).toList();
+  }
+
+  // Mark coffee shop as visited
+  Future<void> markAsVisited(String coffeeShopId, {
+    String? note,
+    int? rating,
+    List<String>? photos,
+    List<DateTime>? visitDates,
+  }) async {
+    final visitData = VisitData(
+      personalRating: rating?.toDouble(),
+      privateReview: note ?? '',
+      visitDates: visitDates ?? [DateTime.now()],
+    );
+
+    await _trackingService.saveVisitData(coffeeShopId, visitData);
+    await _loadTrackingDataFromPersistentStorage();
+  }
+
+  // Update visit data for a coffee shop
+  Future<void> updateVisitData(String coffeeShopId, VisitData visitData) async {
+    await _trackingService.saveVisitData(coffeeShopId, visitData);
+    await _loadTrackingDataFromPersistentStorage();
+  }
+
+  // Add a single visit date to existing visit data
+  Future<void> addVisitDate(String coffeeShopId, VisitData visitData) async {
+    await _trackingService.saveVisitData(coffeeShopId, visitData);
+    await _loadTrackingDataFromPersistentStorage();
+  }
+
+  // Get visit data for a specific coffee shop
+  Future<VisitData?> getVisitData(String coffeeShopId) async {
+    return await _trackingService.getVisitData(coffeeShopId);
+  }
+
+  // Get user statistics
+  Future<UserStats> getUserStats() async {
+    return await _trackingService.getUserStats();
+  }
+
+  // Clear all tracking data
+  Future<void> clearAllTrackingData() async {
+    await _trackingService.clearAllData();
+    await _loadTrackingDataFromPersistentStorage();
+  }
+
+  // Get coffee shop by ID
+  CoffeeShop? getCoffeeShopById(String coffeeShopId) {
     try {
-      return _coffeeShops.firstWhere((shop) => shop.id == id);
+      return _coffeeShops.firstWhere((shop) => shop.id == coffeeShopId);
     } catch (e) {
       return null;
     }
   }
 
-  // Tracking functionality
-  void addToWantToVisit(String coffeeShopId) {
-    _updateTrackingStatus(coffeeShopId, CafeTrackingStatus.wantToVisit, null);
-  }
+  // Load tracking data from persistent storage and update coffee shops
+  Future<void> _loadTrackingDataFromPersistentStorage() async {
+    final wishlistIds = await _trackingService.getWishlist();
+    final favoriteIds = await _trackingService.getFavorites();
 
-  void markAsVisited(String coffeeShopId, {
-    double? personalRating,
-    String? privateReview,
-    DateTime? visitDate,
-    List<DateTime>? visitDates,
-  }) {
-    final shopIndex = _coffeeShops.indexWhere((shop) => shop.id == coffeeShopId);
-    if (shopIndex == -1) return;
+    final updatedShops = <CoffeeShop>[];
+    for (final shop in _coffeeShops) {
+      CafeTrackingStatus status = CafeTrackingStatus.notTracked;
+      VisitData? visitData;
 
-    final currentShop = _coffeeShops[shopIndex];
-    List<DateTime> finalVisitDates = [];
-
-    if (currentShop.visitData != null) {
-      finalVisitDates = List.from(currentShop.visitData!.visitDates);
-    }
-
-    if (visitDates != null && visitDates.isNotEmpty) {
-      finalVisitDates.addAll(visitDates);
-    } else if (visitDate != null) {
-      finalVisitDates.add(visitDate);
-    }
-
-    // Sort dates
-    finalVisitDates.sort((a, b) => a.compareTo(b));
-
-    final visitData = VisitData(
-      personalRating: personalRating,
-      privateReview: privateReview,
-      visitDates: finalVisitDates,
-    );
-
-    _updateTrackingStatus(coffeeShopId, CafeTrackingStatus.visited, visitData);
-  }
-
-  void addVisitDate(String coffeeShopId, DateTime visitDate) {
-    final shopIndex = _coffeeShops.indexWhere((shop) => shop.id == coffeeShopId);
-    if (shopIndex == -1) return;
-
-    final currentShop = _coffeeShops[shopIndex];
-    if (currentShop.visitData == null) return;
-
-    final updatedVisitDates = List<DateTime>.from(currentShop.visitData!.visitDates)
-      ..add(visitDate);
-
-    final updatedVisitData = currentShop.visitData!.copyWith(
-      visitDates: updatedVisitDates,
-    );
-
-    _coffeeShops[shopIndex] = currentShop.copyWith(visitData: updatedVisitData);
-
-    final nearbyIndex = _nearbyCoffeeShops.indexWhere((shop) => shop.id == coffeeShopId);
-    if (nearbyIndex != -1) {
-      _nearbyCoffeeShops[nearbyIndex] = _nearbyCoffeeShops[nearbyIndex].copyWith(
-        visitData: updatedVisitData,
-      );
-    }
-
-    notifyListeners();
-  }
-
-  void updateVisitData(String coffeeShopId, {
-    double? personalRating,
-    String? privateReview,
-    List<DateTime>? visitDates,
-  }) {
-    final shopIndex = _coffeeShops.indexWhere((shop) => shop.id == coffeeShopId);
-    if (shopIndex == -1) return;
-
-    final currentShop = _coffeeShops[shopIndex];
-    if (currentShop.visitData == null) return;
-
-    final updatedVisitData = currentShop.visitData!.copyWith(
-      personalRating: personalRating,
-      privateReview: privateReview,
-      visitDates: visitDates,
-    );
-
-    _coffeeShops[shopIndex] = currentShop.copyWith(visitData: updatedVisitData);
-
-    final nearbyIndex = _nearbyCoffeeShops.indexWhere((shop) => shop.id == coffeeShopId);
-    if (nearbyIndex != -1) {
-      _nearbyCoffeeShops[nearbyIndex] = _nearbyCoffeeShops[nearbyIndex].copyWith(
-        visitData: updatedVisitData,
-      );
-    }
-
-    notifyListeners();
-  }
-
-  void removeFromWantToVisit(String coffeeShopId) {
-    _updateTrackingStatus(coffeeShopId, CafeTrackingStatus.notTracked, null);
-  }
-
-  void removeFromTracking(String coffeeShopId) {
-    _updateTrackingStatus(coffeeShopId, CafeTrackingStatus.notTracked, null);
-  }
-
-  void _updateTrackingStatus(String coffeeShopId, CafeTrackingStatus status, VisitData? visitData) {
-    final index = _coffeeShops.indexWhere((shop) => shop.id == coffeeShopId);
-    if (index != -1) {
-      _coffeeShops[index] = _coffeeShops[index].copyWith(
-        trackingStatus: status,
-        visitData: visitData,
-      );
-
-      final nearbyIndex = _nearbyCoffeeShops.indexWhere((shop) => shop.id == coffeeShopId);
-      if (nearbyIndex != -1) {
-        _nearbyCoffeeShops[nearbyIndex] = _nearbyCoffeeShops[nearbyIndex].copyWith(
-          trackingStatus: status,
-          visitData: visitData,
-        );
+      final shopVisitData = await _trackingService.getVisitData(shop.id);
+      if (shopVisitData != null) {
+        status = CafeTrackingStatus.visited;
+        visitData = shopVisitData;
+      } else if (wishlistIds.contains(shop.id)) {
+        status = CafeTrackingStatus.wantToVisit;
+      } else if (favoriteIds.contains(shop.id)) {
+        status = CafeTrackingStatus.wantToVisit;
       }
 
-      notifyListeners();
+      updatedShops.add(shop.copyWith(
+        trackingStatus: status,
+        visitData: visitData,
+        isFavorite: favoriteIds.contains(shop.id),
+      ));
     }
+
+    _coffeeShops = updatedShops;
+    _applyActiveFilter();
+    notifyListeners();
   }
 
-  List<CoffeeShop> getWantToVisitCoffeeShops() {
-    return _coffeeShops.where((shop) => shop.trackingStatus == CafeTrackingStatus.wantToVisit).toList();
-  }
+  // Refresh coffee shops with new random order
+  Future<void> refreshCoffeeShops() async {
+    _setLoading(true);
+    _error = null;
 
-  List<CoffeeShop> getVisitedCoffeeShops() {
-    return _coffeeShops.where((shop) => shop.trackingStatus == CafeTrackingStatus.visited).toList();
-  }
+    try {
+      // Reload JSON data to get fresh random order
+      await _useJsonDataWithDistance();
 
-  List<CoffeeShop> getNotTrackedCoffeeShops() {
-    return _coffeeShops.where((shop) => shop.trackingStatus == CafeTrackingStatus.notTracked).toList();
+      // Apply tracking data to maintain user's existing tracking
+      await _loadTrackingDataFromPersistentStorage();
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error refreshing coffee shops: $e');
+      }
+      _error = 'Failed to refresh coffee shops: $e';
+    } finally {
+      _setLoading(false);
+    }
   }
 }

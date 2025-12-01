@@ -18,18 +18,27 @@ class FavoritesScreen extends StatelessWidget {
       ),
       body: Consumer<CoffeeShopProvider>(
         builder: (context, provider, child) {
-          final favoriteCoffeeShops = provider.getFavoriteCoffeeShops();
+          return FutureBuilder<List<CoffeeShop>>(
+            future: provider.getFavoriteCoffeeShops(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-          if (favoriteCoffeeShops.isEmpty) {
-            return _buildEmptyState(context);
-          }
+              final favoriteCoffeeShops = snapshot.data ?? [];
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: favoriteCoffeeShops.length,
-            itemBuilder: (context, index) {
-              final coffeeShop = favoriteCoffeeShops[index];
-              return _buildFavoriteCoffeeShopCard(context, coffeeShop);
+              if (favoriteCoffeeShops.isEmpty) {
+                return _buildEmptyState(context);
+              }
+
+              return ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: favoriteCoffeeShops.length,
+                itemBuilder: (context, index) {
+                  final coffeeShop = favoriteCoffeeShops[index];
+                  return _buildFavoriteCoffeeShopCard(context, coffeeShop);
+                },
+              );
             },
           );
         },

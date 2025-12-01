@@ -90,7 +90,7 @@ class ProfileScreen extends StatelessWidget {
                         color: themeProvider.secondaryTextColor,
                       ),
                     ),
-                                ],
+                  ],
                 ),
               ),
             ],
@@ -163,10 +163,14 @@ class ProfileScreen extends StatelessWidget {
                       content: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          _buildThemeOption(context, CoffeeTheme.morning, themeProvider),
-                          _buildThemeOption(context, CoffeeTheme.evening, themeProvider),
-                          _buildThemeOption(context, CoffeeTheme.sunset, themeProvider),
-                          _buildThemeOption(context, CoffeeTheme.midnight, themeProvider),
+                          _buildThemeOption(
+                              context, CoffeeTheme.morning, themeProvider),
+                          _buildThemeOption(
+                              context, CoffeeTheme.evening, themeProvider),
+                          _buildThemeOption(
+                              context, CoffeeTheme.sunset, themeProvider),
+                          _buildThemeOption(
+                              context, CoffeeTheme.midnight, themeProvider),
                         ],
                       ),
                       actions: [
@@ -191,7 +195,8 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildThemeOption(BuildContext context, CoffeeTheme theme, ThemeProvider provider) {
+  Widget _buildThemeOption(
+      BuildContext context, CoffeeTheme theme, ThemeProvider provider) {
     final isSelected = provider.currentTheme == theme;
 
     return Consumer<ThemeProvider>(
@@ -250,7 +255,8 @@ class ProfileScreen extends StatelessWidget {
             ),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: const Icon(Icons.nightlight_round, color: Color(0xFF6B46C1), size: 20),
+          child: const Icon(Icons.nightlight_round,
+              color: Color(0xFF6B46C1), size: 20),
         );
       case CoffeeTheme.sunset:
         return Container(
@@ -264,7 +270,8 @@ class ProfileScreen extends StatelessWidget {
             ),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: const Icon(Icons.wb_twilight, color: Color(0xFFEC4899), size: 20),
+          child:
+              const Icon(Icons.wb_twilight, color: Color(0xFFEC4899), size: 20),
         );
       case CoffeeTheme.midnight:
         return Container(
@@ -278,7 +285,8 @@ class ProfileScreen extends StatelessWidget {
             ),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: const Icon(Icons.dark_mode, color: Color(0xFF10B981), size: 20),
+          child:
+              const Icon(Icons.dark_mode, color: Color(0xFF10B981), size: 20),
         );
     }
   }
@@ -351,7 +359,7 @@ class ProfileScreen extends StatelessWidget {
                       ),
                     ),
                     subtitle: Text(
-                      '1.0.0',
+                      '0.59.111',
                       style: GoogleFonts.inter(
                         fontSize: 14,
                         color: themeProvider.secondaryTextColor,
@@ -377,7 +385,7 @@ class ProfileScreen extends StatelessWidget {
                       ),
                     ),
                     subtitle: Text(
-                      'Coffee Finder Team',
+                      'nashirulwan',
                       style: GoogleFonts.inter(
                         fontSize: 14,
                         color: themeProvider.secondaryTextColor,

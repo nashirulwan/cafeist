@@ -113,23 +113,32 @@ class _ListScreenState extends State<ListScreen> with TickerProviderStateMixin {
   Widget _buildWantToVisitList() {
     return Consumer<CoffeeShopProvider>(
       builder: (context, provider, child) {
-        final wantToVisitShops = provider.getWantToVisitCoffeeShops();
-        final sortedShops = _sortCoffeeShops(wantToVisitShops);
+        return FutureBuilder<List<CoffeeShop>>(
+          future: provider.getWantToVisitCoffeeShops(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-        if (sortedShops.isEmpty) {
-          return _buildEmptyState(
-            'No cafes in your "Want to Visit" list',
-            'Start exploring and add cafes you want to try!',
-            Icons.bookmark_outline,
-          );
-        }
+            final wantToVisitShops = snapshot.data ?? [];
+            final sortedShops = _sortCoffeeShops(wantToVisitShops);
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: sortedShops.length,
-          itemBuilder: (context, index) {
-            final coffeeShop = sortedShops[index];
-            return _buildTrackingCard(coffeeShop, 'want_to_visit');
+            if (sortedShops.isEmpty) {
+              return _buildEmptyState(
+                'No cafes in your "Want to Visit" list',
+                'Start exploring and add cafes you want to try!',
+                Icons.bookmark_outline,
+              );
+            }
+
+            return ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: sortedShops.length,
+              itemBuilder: (context, index) {
+                final coffeeShop = sortedShops[index];
+                return _buildTrackingCard(coffeeShop, 'want_to_visit');
+              },
+            );
           },
         );
       },
@@ -139,23 +148,32 @@ class _ListScreenState extends State<ListScreen> with TickerProviderStateMixin {
   Widget _buildVisitedList() {
     return Consumer<CoffeeShopProvider>(
       builder: (context, provider, child) {
-        final visitedShops = provider.getVisitedCoffeeShops();
-        final sortedShops = _sortCoffeeShops(visitedShops);
+        return FutureBuilder<List<CoffeeShop>>(
+          future: provider.getVisitedCoffeeShops(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-        if (sortedShops.isEmpty) {
-          return _buildEmptyState(
-            'No visited cafes yet',
-            'Start visiting cafes and track your experiences!',
-            Icons.check_circle_outline,
-          );
-        }
+            final visitedShops = snapshot.data ?? [];
+            final sortedShops = _sortCoffeeShops(visitedShops);
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: sortedShops.length,
-          itemBuilder: (context, index) {
-            final coffeeShop = sortedShops[index];
-            return _buildTrackingCard(coffeeShop, 'visited');
+            if (sortedShops.isEmpty) {
+              return _buildEmptyState(
+                'No visited cafes yet',
+                'Start visiting cafes and track your experiences!',
+                Icons.check_circle_outline,
+              );
+            }
+
+            return ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: sortedShops.length,
+              itemBuilder: (context, index) {
+                final coffeeShop = sortedShops[index];
+                return _buildTrackingCard(coffeeShop, 'visited');
+              },
+            );
           },
         );
       },
@@ -165,23 +183,32 @@ class _ListScreenState extends State<ListScreen> with TickerProviderStateMixin {
   Widget _buildDiscoverList() {
     return Consumer<CoffeeShopProvider>(
       builder: (context, provider, child) {
-        final notTrackedShops = provider.getNotTrackedCoffeeShops();
-        final sortedShops = _sortCoffeeShops(notTrackedShops);
+        return FutureBuilder<List<CoffeeShop>>(
+          future: provider.getNotTrackedCoffeeShops(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-        if (sortedShops.isEmpty) {
-          return _buildEmptyState(
-            'All cafes tracked!',
-            'You\'ve added all available cafes to your list',
-            Icons.celebration,
-          );
-        }
+            final notTrackedShops = snapshot.data ?? [];
+            final sortedShops = _sortCoffeeShops(notTrackedShops);
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: sortedShops.length,
-          itemBuilder: (context, index) {
-            final coffeeShop = sortedShops[index];
-            return _buildTrackingCard(coffeeShop, 'discover');
+            if (sortedShops.isEmpty) {
+              return _buildEmptyState(
+                'All cafes tracked!',
+                'You\'ve added all available cafes to your list',
+                Icons.celebration,
+              );
+            }
+
+            return ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: sortedShops.length,
+              itemBuilder: (context, index) {
+                final coffeeShop = sortedShops[index];
+                return _buildTrackingCard(coffeeShop, 'discover');
+              },
+            );
           },
         );
       },
@@ -601,8 +628,8 @@ class _ListScreenState extends State<ListScreen> with TickerProviderStateMixin {
         final provider = context.read<CoffeeShopProvider>();
         provider.markAsVisited(
           coffeeShop.id,
-          personalRating: result['personalRating'],
-          privateReview: result['privateReview'],
+          rating: result['personalRating'],
+          note: result['privateReview'],
           visitDates: result['visitDates'],
         );
 

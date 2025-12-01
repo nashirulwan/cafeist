@@ -8,6 +8,459 @@ import '../models/coffee_shop.dart';
 import '../widgets/glass_container.dart';
 import '../widgets/location_header.dart';
 import 'coffee_shop_detail_screen.dart';
+import '../widgets/theme_switcher.dart';
+
+// Simple Chip Widget
+class SimpleChip extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback? onTap;
+
+  const SimpleChip({
+    super.key,
+    required this.label,
+    required this.icon,
+    this.selected = false,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          gradient: selected
+              ? LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    theme.primaryColor.withOpacity(0.8),
+                    theme.primaryColor.withOpacity(0.6),
+                  ],
+                )
+              : null,
+          color: selected ? null : theme.cardColor,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected
+                ? Colors.transparent
+                : theme.primaryColor.withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color: selected ? Colors.white : theme.primaryColor,
+              size: 18,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                color: selected ? Colors.white : theme.primaryColor,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Simple Coffee Card Widget
+class SimpleCoffeeCard extends StatelessWidget {
+  final String name;
+  final String description;
+  final String distance;
+  final String rating;
+  final String? imageUrl;
+  final bool isOpen;
+  final VoidCallback? onTap;
+
+  const SimpleCoffeeCard({
+    super.key,
+    required this.name,
+    required this.description,
+    required this.distance,
+    required this.rating,
+    this.imageUrl,
+    this.isOpen = false,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return GestureDetector(
+      onTap: onTap,
+      child: GlassContainer(
+        margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          children: [
+            // Image
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: Colors.grey.withOpacity(0.2),
+              ),
+              child: imageUrl != null
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: CachedNetworkImage(
+                        imageUrl: imageUrl!,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(
+                          color: Colors.grey.withOpacity(0.3),
+                          child: const Icon(Icons.coffee, color: Colors.grey),
+                        ),
+                        errorWidget: (context, url, error) => Container(
+                          color: Colors.grey.withOpacity(0.3),
+                          child: const Icon(Icons.error, color: Colors.grey),
+                        ),
+                      ),
+                    )
+                  : Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: theme.primaryColor.withOpacity(0.1),
+                      ),
+                      child: const Icon(Icons.coffee, color: Colors.white),
+                    ),
+            ),
+
+            const SizedBox(width: 16),
+
+            // Content
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Name
+                  Text(
+                    name,
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: theme.textTheme.titleLarge?.color,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+
+                  // Description
+                  Text(
+                    description,
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: theme.textTheme.bodyMedium?.color?.withOpacity(0.8),
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Distance and Rating
+                  Row(
+                    children: [
+                      // Distance
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.location_on, color: Colors.blue, size: 16),
+                            const SizedBox(width: 4),
+                            Text(
+                              distance,
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.blue,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(width: 8),
+
+                      // Rating
+                      Row(
+                        children: [
+                          const Icon(Icons.star, color: Colors.amber, size: 16),
+                          const SizedBox(width: 4),
+                          Text(
+                            rating,
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.amber,
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      // Status
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: isOpen ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          isOpen ? 'Open' : 'Closed',
+                          style: GoogleFonts.inter(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: isOpen ? Colors.green : Colors.red,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ModernChip Widget
+class ModernChip extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback? onTap;
+
+  const ModernChip({
+    super.key,
+    required this.label,
+    required this.icon,
+    this.selected = false,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          gradient: selected
+              ? LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    theme.primaryColor.withOpacity(0.8),
+                    theme.primaryColor.withOpacity(0.6),
+                  ],
+                )
+              : null,
+          color: selected ? null : theme.cardColor,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected
+                ? Colors.transparent
+                : theme.primaryColor.withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+            color: selected ? Colors.white : theme.primaryColor,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// CoffeeShopCard Widget
+class CoffeeShopCard extends StatelessWidget {
+  final String name;
+  final String description;
+  final String distance;
+  final String rating;
+  final String? imageUrl;
+  final bool isOpen;
+  final VoidCallback? onTap;
+
+  const CoffeeShopCard({
+    super.key,
+    required this.name,
+    required this.description,
+    required this.distance,
+    required this.rating,
+    this.imageUrl,
+    this.isOpen = false,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return GestureDetector(
+      onTap: onTap,
+      child: GlassContainer(
+        margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          children: [
+            // Image
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: Colors.grey.withOpacity(0.2),
+              ),
+              child: imageUrl != null
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: CachedNetworkImage(
+                        imageUrl: imageUrl!,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(
+                          color: Colors.grey.withOpacity(0.3),
+                          child: const Icon(Icons.coffee, color: Colors.grey),
+                        ),
+                        errorWidget: (context, url, error) => Container(
+                          color: Colors.grey.withOpacity(0.3),
+                          child: const Icon(Icons.error, color: Colors.grey),
+                        ),
+                      ),
+                    )
+                  : Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: theme.primaryColor.withOpacity(0.1),
+                      ),
+                      child: const Icon(Icons.coffee, color: Colors.white),
+                    ),
+            ),
+
+            const SizedBox(width: 16),
+
+            // Content
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: theme.textTheme.titleLarge?.color,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    description,
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: theme.textTheme.bodyMedium?.color?.withOpacity(0.8),
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      // Distance
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          distance,
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.blue,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(width: 8),
+
+                      // Rating
+                      Row(
+                        children: [
+                          const Icon(Icons.star, color: Colors.amber, size: 16),
+                          const SizedBox(width: 4),
+                          Text(
+                            rating,
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: theme.textTheme.bodyMedium?.color,
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(width: 8),
+
+                      // Status
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: isOpen ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          isOpen ? 'Open' : 'Closed',
+                          style: GoogleFonts.inter(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: isOpen ? Colors.green : Colors.red,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,8 +471,19 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
-  String _selectedDistrict = 'Sukun';
-  String _selectedCity = 'Malang';
+
+  @override
+  void initState() {
+    super.initState();
+    // Only initialize coffee shops if it's the first time loading
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final provider = context.read<CoffeeShopProvider>();
+      // Only update if we don't have any data yet or location has changed significantly
+    if (provider.nearbyCoffeeShops.isEmpty) {
+        provider.updateNearbyCoffeeShops();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,26 +494,65 @@ class _HomeScreenState extends State<HomeScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              // Header - Theme switcher moved to AppBar
+              // Header with refresh button
               Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Text(
-                  'Coffee Finder',
-                  style: GoogleFonts.inter(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w600,
-                    color: theme.textTheme.headlineLarge?.color,
-                  ),
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Coffee Finder',
+                      style: GoogleFonts.inter(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w600,
+                        color: theme.textTheme.headlineLarge?.color,
+                      ),
+                    ),
+                    Consumer<CoffeeShopProvider>(
+                      builder: (context, provider, child) {
+                        return IconButton(
+                          onPressed: provider.isLoading ? null : () async {
+                            await provider.refreshCoffeeShops();
+                          },
+                          icon: provider.isLoading
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.refresh),
+                          tooltip: 'Refresh coffee shops',
+                        );
+                      },
+                    ),
+                  ],
                 ),
               ),
 
-              // Location Header
-              LocationHeader(
-                district: _selectedDistrict,
-                city: _selectedCity,
-                region: 'East Java, Indonesia',
-                onChangeLocation: () {
-                  _showLocationSelector(context);
+              // Location Header (no change button)
+              Consumer<CoffeeShopProvider>(
+                builder: (context, provider, child) {
+                  // Parse location properly to show district and city
+                  String district = 'Kecamatan';
+                  String city = 'Kota';
+
+                  if (provider.userLocation.contains(',')) {
+                    final parts = provider.userLocation.split(',');
+                    district = parts[0].trim().isNotEmpty ? parts[0].trim() : 'Kecamatan';
+                    city = parts.length > 1 && parts[1].trim().isNotEmpty ? parts[1].trim() : 'Kota';
+                  } else if (provider.userLocation.isNotEmpty &&
+                             provider.userLocation != 'Getting location...' &&
+                             provider.userLocation != 'Unknown Location') {
+                    district = provider.userLocation;
+                    city = 'Indonesia';
+                  }
+
+                  return LocationHeader(
+                    district: district,
+                    city: city,
+                    region: provider.userRegion,
+                    onChangeLocation: null, // Remove change location button
+                  );
                 },
               ),
 
@@ -84,7 +587,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                 color: themeProvider.primaryTextColor,
                               ),
                               onChanged: (value) {
-                                context.read<CoffeeShopProvider>().searchCoffeeShops(value);
+                                // Debounced search to avoid too many API calls
+                                Future.delayed(const Duration(milliseconds: 500), () {
+                                  if (_searchController.text == value) {  // Check if still the same query
+                                    context.read<CoffeeShopProvider>().searchCoffeeShops(value);
+                                  }
+                                });
                               },
                             ),
                           ),
@@ -112,44 +620,51 @@ class _HomeScreenState extends State<HomeScreen> {
               // Filter Chips
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      ModernChip(
-                        label: 'All Cafes',
-                        icon: Icons.coffee,
-                        selected: true,
-                        onTap: () {
-                          // TODO: Filter by all
-                        },
+                child: Consumer<CoffeeShopProvider>(
+                  builder: (context, provider, child) {
+                    return SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          ModernChip(
+                            label: 'All',
+                            icon: Icons.coffee,
+                            selected: provider.activeFilter == 'all',
+                            onTap: () {
+                              provider.setActiveFilter('all');
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          ModernChip(
+                            label: 'Nearby',
+                            icon: Icons.near_me,
+                            selected: provider.activeFilter == 'nearby',
+                            onTap: () {
+                              provider.setActiveFilter('nearby');
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          ModernChip(
+                            label: 'Top Rated',
+                            icon: Icons.star,
+                            selected: provider.activeFilter == 'topRated',
+                            onTap: () {
+                              provider.setActiveFilter('topRated');
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          ModernChip(
+                            label: 'Open Now',
+                            icon: Icons.access_time,
+                            selected: provider.activeFilter == 'openNow',
+                            onTap: () {
+                              provider.setActiveFilter('openNow');
+                            },
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 8),
-                      ModernChip(
-                        label: 'Near Me',
-                        icon: Icons.near_me,
-                        onTap: () {
-                          // TODO: Filter by distance
-                        },
-                      ),
-                      const SizedBox(width: 8),
-                      ModernChip(
-                        label: 'Top Rated',
-                        icon: Icons.star,
-                        onTap: () {
-                          // TODO: Filter by rating
-                        },
-                      ),
-                      const SizedBox(width: 8),
-                      ModernChip(
-                        label: 'Open Now',
-                        icon: Icons.access_time,
-                        onTap: () {
-                          // TODO: Filter by open status
-                        },
-                      ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
               ),
 
@@ -187,12 +702,22 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  provider.error!,
+                                  provider.error ?? 'No coffee shops available',
                                   style: theme.textTheme.bodyMedium?.copyWith(
                                     color: themeProvider.secondaryTextColor.withOpacity(0.7),
                                   ),
                                   textAlign: TextAlign.center,
                                 ),
+                                if (provider.error != null && provider.error!.contains('offline')) ...[
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Using local coffee shop database',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: themeProvider.secondaryTextColor.withOpacity(0.5),
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
                                 const SizedBox(height: 24),
                                 GlassContainer(
                                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -223,7 +748,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     return SingleChildScrollView(
                       child: Column(
                         children: [
-                          // Today's Spotlight Section
+                          // Today's Spotlight Section - Only nearest cafe
                           if (provider.nearbyCoffeeShops.isNotEmpty) ...[
                             // Section Header
                             Padding(
@@ -233,7 +758,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   return Row(
                                     children: [
                                       Text(
-                                        '🎯 Today\'s Spotlight',
+                                        '☕ Nearby Cafe',
                                         style: GoogleFonts.inter(
                                           fontSize: 18,
                                           fontWeight: FontWeight.w600,
@@ -242,8 +767,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                       ),
                                       const Spacer(),
                                       Icon(
-                                        Icons.local_fire_department,
-                                        color: Colors.orange,
+                                        Icons.near_me,
+                                        color: themeProvider.accentColor,
                                         size: 20,
                                       ),
                                     ],
@@ -253,7 +778,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             const SizedBox(height: 12),
 
-                            // Featured Coffee Shop Card
+                            // Featured Coffee Shop Card (Nearest)
                             CoffeeShopCard(
                               name: provider.nearbyCoffeeShops.first.name,
                               description: provider.nearbyCoffeeShops.first.description,
@@ -338,7 +863,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         ),
                                         const SizedBox(height: 8),
                                         Text(
-                                          'Try changing your location or search terms',
+                                          'Try refreshing or search terms',
                                           style: theme.textTheme.bodyMedium?.copyWith(
                                             color: themeProvider.secondaryTextColor.withOpacity(0.7),
                                           ),
@@ -389,6 +914,28 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
+      ),
+      floatingActionButton: Consumer<CoffeeShopProvider>(
+        builder: (context, provider, child) {
+          return FloatingActionButton(
+            onPressed: () {
+              // Refresh cafe data
+              provider.updateNearbyCoffeeShops();
+            },
+            child: provider.isLoading
+                ? Container(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  )
+                : const Icon(Icons.refresh),
+          );
+        },
       ),
     );
   }

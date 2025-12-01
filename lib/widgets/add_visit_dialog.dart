@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/coffee_shop.dart';
 
@@ -39,10 +40,11 @@ class _AddVisitDialogState extends State<AddVisitDialog> {
       ),
       content: SizedBox(
         width: double.maxFinite,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             Text(
               widget.coffeeShop.name,
               style: GoogleFonts.inter(
@@ -309,6 +311,7 @@ class _AddVisitDialogState extends State<AddVisitDialog> {
               ],
             ],
           ],
+          ),
         ),
       ),
       actions: [
@@ -413,16 +416,32 @@ class _AddVisitDialogState extends State<AddVisitDialog> {
   }
 
   void _saveAsVisited() {
+    // Create visit dates list
+    List<DateTime> visitDates = [];
+
+    // Add selected date if exists
+    if (_selectedDate != null) {
+      visitDates.add(_selectedDate!);
+    }
+
+    // Add additional dates
+    visitDates.addAll(_additionalDates);
+
+    // If no visit dates are selected, use today's date as default
+    if (visitDates.isEmpty) {
+      visitDates.add(DateTime.now());
+    }
+
     final Map<String, dynamic> result = {
       'personalRating': _personalRating > 0 ? _personalRating : null,
       'privateReview': _reviewController.text.trim().isNotEmpty ? _reviewController.text.trim() : null,
-      'visitDates': <DateTime>[],
+      'visitDates': visitDates,
     };
 
-    if (_selectedDate != null) {
-      result['visitDates'].add(_selectedDate!);
+    // Debug print to see what's being saved
+    if (kDebugMode) {
+      print('Saving as visited: $result');
     }
-    result['visitDates'].addAll(_additionalDates);
 
     Navigator.of(context).pop(result);
   }
@@ -687,6 +706,12 @@ class _VisitDetailsDialogState extends State<VisitDetailsDialog> {
       'privateReview': _reviewController.text.trim().isNotEmpty ? _reviewController.text.trim() : null,
       'visitDates': _visitDates,
     };
+
+    // Debug print to see what's being saved
+    if (kDebugMode) {
+      print('Saving visit details: $result');
+    }
+
     Navigator.of(context).pop(result);
   }
 }

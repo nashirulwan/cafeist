@@ -54,15 +54,7 @@ class LocationHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Current Location',
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: themeProvider.secondaryTextColor.withOpacity(0.8),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 2),
+                  const SizedBox(height: 2),
                 Text(
                   '$district, $city',
                   style: GoogleFonts.inter(
@@ -71,14 +63,7 @@ class LocationHeader extends StatelessWidget {
                     color: themeProvider.primaryTextColor,
                   ),
                 ),
-                Text(
-                  region,
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: themeProvider.secondaryTextColor.withOpacity(0.7),
-                  ),
-                ),
-              ],
+                ],
             ),
           ),
 
