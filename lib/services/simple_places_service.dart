@@ -16,7 +16,8 @@ class SimplePlacesService {
       final apiKey = dotenv.env['GOOGLE_PLACES_API_KEY'];
       if (apiKey == null || apiKey.isEmpty) {
         print('⚠️ GOOGLE_PLACES_API_KEY not found in .env file');
-        _apiKey = 'AIzaSyBll9756jjbWWStoaxgUHjtEv90FOmCnl0'; // Fallback dari .env
+        _apiKey = null;
+        _isInitialized = false;
         return;
       }
       _apiKey = apiKey;
@@ -29,7 +30,7 @@ class SimplePlacesService {
       }
     } catch (e) {
       print('❌ Failed to initialize Places API: $e');
-      _apiKey = 'AIzaSyBll9756jjbWWStoaxgUHjtEv90FOmCnl0'; // Fallback
+      _apiKey = null;
       _isInitialized = false;
     }
   }

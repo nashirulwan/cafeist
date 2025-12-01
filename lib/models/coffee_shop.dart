@@ -136,8 +136,7 @@ class CoffeeShop {
           .map((photo) => 'https://maps.googleapis.com/maps/api/place/photo'
               '?maxwidth=800'
               '&maxheight=600'
-              '&photoreference=${photo['photo_reference']}'
-              '&key=AIzaSyBll9756jjbWWStoaxgUHjtEv90FOmCnl0')
+              '&photoreference=${photo['photo_reference']}')
           .cast<String>()
           .toList();
     }

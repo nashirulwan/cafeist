@@ -111,3 +111,9 @@ lib/generated_plugin_registrant.dart
 **/android/app/src/main/res/values/secrets.xml
 **/ios/Runner/GoogleService-Info.plist
 **/ios/Runner/Info.plist
+google-services.json
+GoogleService-Info.plist
+secrets.json
+config.json
+api_keys.txt
+*.env.example

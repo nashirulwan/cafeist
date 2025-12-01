@@ -2,6 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class FirebaseService {
   static bool _initialized = false;
@@ -13,17 +14,16 @@ class FirebaseService {
     if (_initialized) return;
 
     try {
-      // Initialize Firebase with options from google-services.json
-      // Firebase will automatically read from google-services.json on Android
+      // Initialize Firebase with options from environment variables
       await Firebase.initializeApp(
-        options: const FirebaseOptions(
-          apiKey: 'AIzaSyCjMXoQ27VQotN_nzWIbaxbxOmDvtnwO2w',
-          appId: '1:510769430776:android:8dd2cc7edf1ea2d99e3b0d',
-          messagingSenderId: '510769430776',
-          projectId: 'cafeist-7a684',
-          authDomain: 'cafeist-7a684.firebaseapp.com',
-          databaseURL: 'https://cafeist-7a684-default-rtdb.firebaseio.com',
-          storageBucket: 'cafeist-7a684.firebasestorage.app',
+        options: FirebaseOptions(
+          apiKey: dotenv.env['FIREBASE_API_KEY'] ?? '',
+          appId: dotenv.env['FIREBASE_APP_ID'] ?? '',
+          messagingSenderId: dotenv.env['FIREBASE_MESSAGING_SENDER_ID'] ?? '',
+          projectId: dotenv.env['FIREBASE_PROJECT_ID'] ?? '',
+          authDomain: dotenv.env['FIREBASE_AUTH_DOMAIN'] ?? '',
+          databaseURL: dotenv.env['FIREBASE_DATABASE_URL'] ?? '',
+          storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET'] ?? '',
         ),
       );
 
