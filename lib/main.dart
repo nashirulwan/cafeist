@@ -13,6 +13,8 @@ import 'providers/auth_provider.dart';
 import 'services/simple_places_service.dart';
 import 'services/firebase_service.dart';
 import 'services/auth_service.dart';
+import 'services/personal_tracking_service.dart';
+import 'services/error_handler.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -74,7 +76,41 @@ Future<void> main() async {
     print('🔄 Using offline data fallback...');
   }
 
+  // Auto-sync user data on app startup if user is logged in
+  await _autoSyncUserData();
+
   runApp(const CoffeeFinderApp());
+}
+
+/// Auto-sync user data from Firebase to local storage on app startup
+Future<void> _autoSyncUserData() async {
+  try {
+    print('🔄 Checking for existing user session...');
+
+    // Wait a bit for Firebase to fully initialize
+    await Future.delayed(Duration(milliseconds: 500));
+
+    // Check if user is logged in
+    if (FirebaseService.isLoggedIn) {
+      final userId = FirebaseService.currentUser!.uid;
+      print('✅ User session found: $userId');
+
+      // Sync data from Firebase to local storage
+      try {
+        final trackingService = PersonalTrackingService();
+        await trackingService.syncFromCloudToLocal(userId);
+        print('✅ User data auto-synced from Firebase');
+      } catch (e) {
+        print('⚠️ Warning: Auto-sync failed: $e');
+        print('🔄 Continuing with local data...');
+      }
+    } else {
+      print('ℹ️ No existing user session found');
+    }
+  } catch (e) {
+    print('❌ Auto-sync error: $e');
+    print('🔄 App will continue without auto-sync');
+  }
 }
 
 class CoffeeFinderApp extends StatelessWidget {

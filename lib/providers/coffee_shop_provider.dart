@@ -8,6 +8,7 @@ import 'package:geocoding/geocoding.dart';
 import '../models/coffee_shop.dart';
 import '../services/simple_places_service.dart';
 import '../services/personal_tracking_service.dart';
+import '../services/recommendation_service.dart';
 
 class CoffeeShopProvider extends ChangeNotifier {
   // Private fields
@@ -272,18 +273,31 @@ class CoffeeShopProvider extends ChangeNotifier {
     switch (_activeFilter) {
       case 'nearby':
         final nearby = _coffeeShops.where((cafe) => cafe.distance <= 5000).toList(); // 5km in meters
+        nearby.sort((a, b) => a.distance.compareTo(b.distance)); // Sort by distance
         _nearbyCoffeeShops = nearby.take(_currentLimit).toList();
         _hasMoreCafes = _coffeeShops.length > _currentLimit && nearby.length >= _currentLimit;
         break;
       case 'topRated':
         final topRated = _coffeeShops.where((cafe) => cafe.rating >= 4.0).toList();
+        topRated.sort((a, b) => b.rating.compareTo(a.rating)); // Sort by rating (highest first)
         _nearbyCoffeeShops = topRated.take(_currentLimit).toList();
         _hasMoreCafes = _coffeeShops.length > _currentLimit && topRated.length >= _currentLimit;
         break;
+      case 'topReview':
+        final topReview = List<CoffeeShop>.from(_coffeeShops);
+        topReview.sort((a, b) => b.reviewCount.compareTo(a.reviewCount)); // Sort by review count
+        _nearbyCoffeeShops = topReview.take(_currentLimit).toList();
+        _hasMoreCafes = _coffeeShops.length > _currentLimit && topReview.length >= _currentLimit;
+        break;
       case 'openNow':
         final openNow = _coffeeShops.where((cafe) => cafe.isOpen).toList();
+        openNow.sort((a, b) => a.distance.compareTo(b.distance)); // Sort open cafes by distance
         _nearbyCoffeeShops = openNow.take(_currentLimit).toList();
         _hasMoreCafes = _coffeeShops.length > _currentLimit && openNow.length >= _currentLimit;
+        break;
+      case 'recommended':
+        // This is handled by applyRecommendationFilter method
+        // Don't apply regular filtering for recommendations
         break;
       case 'all':
       default:
@@ -292,7 +306,7 @@ class CoffeeShopProvider extends ChangeNotifier {
         break;
     }
 
-    if (kDebugMode) {
+    if (kDebugMode && _activeFilter != 'recommended') {
       print('Filter "$_activeFilter": ${_coffeeShops.length} total, showing ${_nearbyCoffeeShops.length}');
     }
   }
@@ -515,34 +529,45 @@ class CoffeeShopProvider extends ChangeNotifier {
 
   // Load tracking data from persistent storage and update coffee shops
   Future<void> _loadTrackingDataFromPersistentStorage() async {
-    final wishlistIds = await _trackingService.getWishlist();
-    final favoriteIds = await _trackingService.getFavorites();
+    try {
+      print('🔄 Loading tracking data from persistent storage...');
 
-    final updatedShops = <CoffeeShop>[];
-    for (final shop in _coffeeShops) {
-      CafeTrackingStatus status = CafeTrackingStatus.notTracked;
-      VisitData? visitData;
+      final wishlistIds = await _trackingService.getWishlist();
+      final favoriteIds = await _trackingService.getFavorites();
 
-      final shopVisitData = await _trackingService.getVisitData(shop.id);
-      if (shopVisitData != null) {
-        status = CafeTrackingStatus.visited;
-        visitData = shopVisitData;
-      } else if (wishlistIds.contains(shop.id)) {
-        status = CafeTrackingStatus.wantToVisit;
-      } else if (favoriteIds.contains(shop.id)) {
-        status = CafeTrackingStatus.wantToVisit;
+      final updatedShops = <CoffeeShop>[];
+      for (final shop in _coffeeShops) {
+        CafeTrackingStatus status = CafeTrackingStatus.notTracked;
+        VisitData? visitData;
+
+        final shopVisitData = await _trackingService.getVisitData(shop.id);
+        if (shopVisitData != null) {
+          status = CafeTrackingStatus.visited;
+          visitData = shopVisitData;
+        } else if (wishlistIds.contains(shop.id)) {
+          status = CafeTrackingStatus.wantToVisit;
+        } else if (favoriteIds.contains(shop.id)) {
+          status = CafeTrackingStatus.wantToVisit;
+        }
+
+        updatedShops.add(shop.copyWith(
+          trackingStatus: status,
+          visitData: visitData,
+          isFavorite: favoriteIds.contains(shop.id),
+        ));
       }
 
-      updatedShops.add(shop.copyWith(
-        trackingStatus: status,
-        visitData: visitData,
-        isFavorite: favoriteIds.contains(shop.id),
-      ));
-    }
+      _coffeeShops = updatedShops;
+      _applyActiveFilter();
 
-    _coffeeShops = updatedShops;
-    _applyActiveFilter();
-    notifyListeners();
+      print('✅ Tracking data loaded: ${wishlistIds.length} wishlist, ${favoriteIds.length} favorites');
+      notifyListeners();
+    } catch (e) {
+      print('❌ Error loading tracking data: $e');
+      // Continue without tracking data if error occurs
+      _applyActiveFilter();
+      notifyListeners();
+    }
   }
 
   // Refresh coffee shops with new random order
@@ -561,6 +586,100 @@ class CoffeeShopProvider extends ChangeNotifier {
         print('Error refreshing coffee shops: $e');
       }
       _error = 'Failed to refresh coffee shops: $e';
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Get personalized recommendations using the RecommendationService
+  Future<List<CoffeeShop>> getRecommendations() async {
+    try {
+      if (kDebugMode) {
+        print('🎯 Generating personalized recommendations...');
+      }
+
+      // Get recommendations from the service
+      final recommendations = await RecommendationService.getRecommendations(_coffeeShops);
+
+      if (kDebugMode) {
+        print('✅ Generated ${recommendations.length} personalized recommendations');
+      }
+
+      return recommendations;
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ Error getting recommendations: $e');
+      }
+
+      // Fallback to top-rated cafes
+      final topRated = _coffeeShops
+          .where((cafe) => cafe.rating >= 4.0)
+          .toList()
+        ..sort((a, b) => b.rating.compareTo(a.rating));
+
+      return topRated.take(10).toList();
+    }
+  }
+
+  // Get recommendations by specific category
+  Future<List<CoffeeShop>> getRecommendationsByCategory(String category) async {
+    try {
+      if (kDebugMode) {
+        print('🎯 Getting recommendations for category: $category');
+      }
+
+      return await RecommendationService.getRecommendationsByCategory(_coffeeShops, category);
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ Error getting category recommendations: $e');
+      }
+      return [];
+    }
+  }
+
+  // Refresh recommendations with updated user data
+  Future<List<CoffeeShop>> refreshRecommendations() async {
+    try {
+      if (kDebugMode) {
+        print('🔄 Refreshing recommendations with updated user data...');
+      }
+
+      // Reload tracking data first
+      await _loadTrackingDataFromPersistentStorage();
+
+      // Get fresh recommendations
+      return await getRecommendations();
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ Error refreshing recommendations: $e');
+      }
+      return [];
+    }
+  }
+
+  // Apply recommendation filter (shows personalized recommendations)
+  Future<void> applyRecommendationFilter() async {
+    _setLoading(true);
+    _activeFilter = 'recommended';
+
+    try {
+      // Get personalized recommendations
+      final recommendations = await getRecommendations();
+
+      // Update nearby coffee shops with recommendations
+      _nearbyCoffeeShops = recommendations;
+      _hasMoreCafes = false; // Recommendations are a fixed list
+
+      if (kDebugMode) {
+        print('✅ Applied recommendation filter: ${recommendations.length} cafes');
+      }
+
+      notifyListeners();
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ Error applying recommendation filter: $e');
+      }
+      _error = 'Failed to get recommendations: $e';
     } finally {
       _setLoading(false);
     }

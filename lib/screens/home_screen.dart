@@ -7,6 +7,7 @@ import '../providers/theme_provider.dart';
 import '../models/coffee_shop.dart';
 import '../widgets/glass_container.dart';
 import '../widgets/location_header.dart';
+import '../widgets/optimized_coffee_shop_card.dart';
 import 'coffee_shop_detail_screen.dart';
 import '../widgets/theme_switcher.dart';
 
@@ -494,11 +495,10 @@ class _HomeScreenState extends State<HomeScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              // Header with refresh button
+              // Header
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       'Coffee Finder',
@@ -507,23 +507,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         fontWeight: FontWeight.w600,
                         color: theme.textTheme.headlineLarge?.color,
                       ),
-                    ),
-                    Consumer<CoffeeShopProvider>(
-                      builder: (context, provider, child) {
-                        return IconButton(
-                          onPressed: provider.isLoading ? null : () async {
-                            await provider.refreshCoffeeShops();
-                          },
-                          icon: provider.isLoading
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
-                                )
-                              : const Icon(Icons.refresh),
-                          tooltip: 'Refresh coffee shops',
-                        );
-                      },
                     ),
                   ],
                 ),
@@ -654,11 +637,20 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           const SizedBox(width: 8),
                           ModernChip(
-                            label: 'Open Now',
-                            icon: Icons.access_time,
-                            selected: provider.activeFilter == 'openNow',
+                            label: 'Top Review',
+                            icon: Icons.reviews,
+                            selected: provider.activeFilter == 'topReview',
                             onTap: () {
-                              provider.setActiveFilter('openNow');
+                              provider.setActiveFilter('topReview');
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          ModernChip(
+                            label: 'For You',
+                            icon: Icons.thumb_up,
+                            selected: provider.activeFilter == 'recommended',
+                            onTap: () async {
+                              await provider.applyRecommendationFilter();
                             },
                           ),
                         ],
@@ -748,96 +740,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     return SingleChildScrollView(
                       child: Column(
                         children: [
-                          // Today's Spotlight Section - Only nearest cafe
-                          if (provider.nearbyCoffeeShops.isNotEmpty) ...[
-                            // Section Header
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                              child: Consumer<ThemeProvider>(
-                                builder: (context, themeProvider, child) {
-                                  return Row(
-                                    children: [
-                                      Text(
-                                        '☕ Nearby Cafe',
-                                        style: GoogleFonts.inter(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w600,
-                                          color: themeProvider.primaryTextColor,
-                                        ),
-                                      ),
-                                      const Spacer(),
-                                      Icon(
-                                        Icons.near_me,
-                                        color: themeProvider.accentColor,
-                                        size: 20,
-                                      ),
-                                    ],
-                                  );
-                                },
-                              ),
-                            ),
-                            const SizedBox(height: 12),
 
-                            // Featured Coffee Shop Card (Nearest)
-                            CoffeeShopCard(
-                              name: provider.nearbyCoffeeShops.first.name,
-                              description: provider.nearbyCoffeeShops.first.description,
-                              distance: '${provider.nearbyCoffeeShops.first.distance.toStringAsFixed(1)} km',
-                              rating: '${provider.nearbyCoffeeShops.first.rating}',
-                              imageUrl: provider.nearbyCoffeeShops.first.photos.isNotEmpty
-                                  ? provider.nearbyCoffeeShops.first.photos.first
-                                  : null,
-                              isOpen: provider.nearbyCoffeeShops.first.isOpen,
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => CoffeeShopDetailScreen(
-                                      coffeeShop: provider.nearbyCoffeeShops.first,
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                            const SizedBox(height: 24),
-                          ],
-
-                          // Nearby Cafes Section
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                            child: Consumer<ThemeProvider>(
-                              builder: (context, themeProvider, child) {
-                                return Row(
-                                  children: [
-                                    Text(
-                                      '☕ Nearby Cafes',
-                                      style: GoogleFonts.inter(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w600,
-                                        color: themeProvider.primaryTextColor,
-                                      ),
-                                    ),
-                                    const Spacer(),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                      decoration: BoxDecoration(
-                                        color: themeProvider.accentColor.withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Text(
-                                        '${provider.nearbyCoffeeShops.length} places',
-                                        style: GoogleFonts.inter(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                          color: themeProvider.accentColor,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
-                          ),
                           const SizedBox(height: 12),
 
                           // Coffee Shop List
@@ -881,24 +784,35 @@ class _HomeScreenState extends State<HomeScreen> {
                               physics: const NeverScrollableScrollPhysics(),
                               padding: const EdgeInsets.only(bottom: 100),
                               itemCount: provider.nearbyCoffeeShops.length,
+                              // Performance optimization: set item extent for smooth scrolling
+                              itemExtent: 120.0,
+                              // Performance optimization: cache extent for better performance
+                              cacheExtent: 500.0,
                               itemBuilder: (context, index) {
                                 final coffeeShop = provider.nearbyCoffeeShops[index];
-                                return CoffeeShopCard(
-                                  name: coffeeShop.name,
-                                  description: coffeeShop.description,
-                                  distance: '${coffeeShop.distance.toStringAsFixed(1)} km',
-                                  rating: '${coffeeShop.rating}',
-                                  imageUrl: coffeeShop.photos.isNotEmpty
-                                      ? coffeeShop.photos.first
-                                      : null,
-                                  isOpen: coffeeShop.isOpen,
+                                return OptimizedCoffeeShopCard(
+                                  coffeeShop: coffeeShop,
                                   onTap: () {
                                     Navigator.push(
                                       context,
-                                      MaterialPageRoute(
-                                        builder: (context) => CoffeeShopDetailScreen(
-                                          coffeeShop: coffeeShop,
-                                        ),
+                                      PageRouteBuilder(
+                                        pageBuilder: (context, animation, secondaryAnimation) =>
+                                            CoffeeShopDetailScreen(
+                                              coffeeShop: coffeeShop,
+                                            ),
+                                        transitionDuration: const Duration(milliseconds: 300),
+                                        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                                          return SlideTransition(
+                                            position: Tween<Offset>(
+                                              begin: const Offset(1.0, 0.0),
+                                              end: Offset.zero,
+                                            ).animate(CurvedAnimation(
+                                              parent: animation,
+                                              curve: Curves.easeInOut,
+                                            )),
+                                            child: child,
+                                          );
+                                        },
                                       ),
                                     );
                                   },

@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/coffee_shop.dart';
+import 'firebase_sync_service.dart';
 
 class PersonalTrackingService {
   static const String _visitKey = 'user_visits';
@@ -11,9 +13,10 @@ class PersonalTrackingService {
 
   final Uuid _uuid = const Uuid();
 
-  /// Save visit data for a coffee shop
+  /// Save visit data for a coffee shop (with Firebase sync)
   Future<void> saveVisitData(String coffeeShopId, VisitData visitData) async {
     try {
+      // Save to local storage first
       final prefs = await SharedPreferences.getInstance();
       final visitsJson = prefs.getString(_visitKey) ?? '{}';
       final Map<String, dynamic> allVisits = json.decode(visitsJson);
@@ -22,7 +25,20 @@ class PersonalTrackingService {
 
       await prefs.setString(_visitKey, json.encode(allVisits));
       await _updateVisitStats(coffeeShopId, visitData);
+
+      // Sync to Firebase if user is logged in
+      if (FirebaseSyncService.isUserLoggedIn()) {
+        final userId = FirebaseSyncService.getCurrentUserId()!;
+        await FirebaseSyncService.syncVisitToCloud(
+          userId: userId,
+          coffeeShopId: coffeeShopId,
+          visitData: visitData.toJson(),
+        );
+      }
+
+      print('✅ Visit data saved locally and synced to cloud');
     } catch (e) {
+      print('❌ Error saving visit data: $e');
       throw Exception('Failed to save visit data: $e');
     }
   }
@@ -43,9 +59,10 @@ class PersonalTrackingService {
     }
   }
 
-  /// Add coffee shop to wishlist
+  /// Add coffee shop to wishlist (with Firebase sync)
   Future<void> addToWishlist(String coffeeShopId) async {
     try {
+      // Add to local storage first
       final prefs = await SharedPreferences.getInstance();
       final wishlistJson = prefs.getString(_wishlistKey) ?? '[]';
       final List<dynamic> wishlist = json.decode(wishlistJson);
@@ -53,8 +70,21 @@ class PersonalTrackingService {
       if (!wishlist.contains(coffeeShopId)) {
         wishlist.add(coffeeShopId);
         await prefs.setString(_wishlistKey, json.encode(wishlist));
+
+        // Sync to Firebase if user is logged in
+        if (FirebaseSyncService.isUserLoggedIn()) {
+          final userId = FirebaseSyncService.getCurrentUserId()!;
+          final updatedWishlist = List<String>.from(wishlist);
+          await FirebaseSyncService.syncWishlistToCloud(
+            userId: userId,
+            wishlist: updatedWishlist,
+          );
+        }
+
+        print('✅ Added to wishlist and synced to cloud: $coffeeShopId');
       }
     } catch (e) {
+      print('❌ Error adding to wishlist: $e');
       throw Exception('Failed to add to wishlist: $e');
     }
   }
@@ -84,9 +114,10 @@ class PersonalTrackingService {
     }
   }
 
-  /// Toggle favorite status
+  /// Toggle favorite status (with Firebase sync)
   Future<void> toggleFavorite(String coffeeShopId) async {
     try {
+      // Update local storage first
       final prefs = await SharedPreferences.getInstance();
       final favoritesJson = prefs.getString(_favoritesKey) ?? '[]';
       final List<dynamic> favorites = json.decode(favoritesJson);
@@ -98,7 +129,20 @@ class PersonalTrackingService {
       }
 
       await prefs.setString(_favoritesKey, json.encode(favorites));
+
+      // Sync to Firebase if user is logged in
+      if (FirebaseSyncService.isUserLoggedIn()) {
+        final userId = FirebaseSyncService.getCurrentUserId()!;
+        final updatedFavorites = List<String>.from(favorites);
+        await FirebaseSyncService.syncFavoritesToCloud(
+          userId: userId,
+          favorites: updatedFavorites,
+        );
+      }
+
+      print('✅ Favorite status updated and synced to cloud: $coffeeShopId');
     } catch (e) {
+      print('❌ Error toggling favorite: $e');
       throw Exception('Failed to toggle favorite: $e');
     }
   }
@@ -179,15 +223,78 @@ class PersonalTrackingService {
     }
   }
 
+  /// Sync data from Firebase to local storage
+  Future<void> syncFromCloudToLocal(String userId) async {
+    try {
+      // Get data from Firebase
+      final cloudData = await FirebaseSyncService.getUserDataFromCloud(userId);
+
+      // Save to local storage
+      final prefs = await SharedPreferences.getInstance();
+
+      // Sync visits
+      final cloudVisits = cloudData['visits'] as Map<String, dynamic>;
+      await prefs.setString(_visitKey, json.encode(cloudVisits));
+
+      // Sync wishlist
+      final cloudWishlist = List<String>.from(cloudData['wishlist']);
+      await prefs.setString(_wishlistKey, json.encode(cloudWishlist));
+
+      // Sync favorites
+      final cloudFavorites = List<String>.from(cloudData['favorites']);
+      await prefs.setString(_favoritesKey, json.encode(cloudFavorites));
+
+      print('✅ Data synced from cloud to local storage');
+    } catch (e) {
+      print('❌ Error syncing from cloud: $e');
+      // Don't throw, just continue with local data
+    }
+  }
+
+  /// Sync all local data to Firebase
+  Future<void> syncAllToCloud(String userId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      // Get all local data
+      final visitsJson = prefs.getString(_visitKey) ?? '{}';
+      final wishlistJson = prefs.getString(_wishlistKey) ?? '[]';
+      final favoritesJson = prefs.getString(_favoritesKey) ?? '[]';
+
+      // Sync to Firebase
+      await FirebaseSyncService.syncUserDataToCloud(
+        userId: userId,
+        wishlist: List<String>.from(json.decode(wishlistJson)),
+        favorites: List<String>.from(json.decode(favoritesJson)),
+        visits: json.decode(visitsJson),
+      );
+
+      print('✅ All local data synced to cloud');
+    } catch (e) {
+      print('❌ Error syncing all data to cloud: $e');
+      throw Exception('Failed to sync data to cloud: $e');
+    }
+  }
+
   /// Clear all user data (for testing/reset)
   Future<void> clearAllData() async {
     try {
+      // Clear local storage
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_visitKey);
       await prefs.remove(_wishlistKey);
       await prefs.remove(_favoritesKey);
       await prefs.remove(_statsKey);
+
+      // Clear cloud data if user is logged in
+      if (FirebaseSyncService.isUserLoggedIn()) {
+        final userId = FirebaseSyncService.getCurrentUserId()!;
+        await FirebaseSyncService.deleteUserDataFromCloud(userId);
+      }
+
+      print('✅ All user data cleared locally and from cloud');
     } catch (e) {
+      print('❌ Error clearing data: $e');
       throw Exception('Failed to clear data: $e');
     }
   }

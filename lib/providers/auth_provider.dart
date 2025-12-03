@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import '../models/user_profile.dart';
 import '../services/auth_service.dart';
 import '../services/firebase_service.dart';
+import '../services/firebase_sync_service.dart';
+import '../services/personal_tracking_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   UserProfile? _user;
@@ -73,8 +75,20 @@ class AuthProvider extends ChangeNotifier {
       final userProfile = await AuthService.signInWithGoogle();
       _user = userProfile;
 
+      // Create user profile in Firestore if it doesn't exist
+      await FirebaseSyncService.createUserProfileIfNotExists(
+        userId: userProfile.uid,
+        displayName: userProfile.displayName,
+        email: userProfile.email,
+        photoURL: userProfile.photoURL,
+      );
+
+      // Sync data from Firebase to local storage
+      await _syncUserDataOnLogin(userProfile.uid);
+
       if (kDebugMode) {
         print('✅ Google Sign In successful: ${userProfile.displayName}');
+        print('✅ User data synced from cloud');
       }
     } catch (e) {
       _setError(e.toString());
@@ -106,8 +120,20 @@ class AuthProvider extends ChangeNotifier {
       final userProfile = await AuthService.signInWithEmail(email, password);
       _user = userProfile;
 
+      // Create user profile in Firestore if it doesn't exist
+      await FirebaseSyncService.createUserProfileIfNotExists(
+        userId: userProfile.uid,
+        displayName: userProfile.displayName,
+        email: userProfile.email,
+        photoURL: userProfile.photoURL,
+      );
+
+      // Sync data from Firebase to local storage
+      await _syncUserDataOnLogin(userProfile.uid);
+
       if (kDebugMode) {
         print('✅ Email Sign In successful: ${userProfile.displayName}');
+        print('✅ User data synced from cloud');
       }
     } catch (e) {
       _setError(e.toString());
@@ -139,8 +165,20 @@ class AuthProvider extends ChangeNotifier {
       final userProfile = await AuthService.createEmailUser(email, password, displayName);
       _user = userProfile;
 
+      // Create user profile in Firestore (this will be called in AuthService.createEmailUser too)
+      await FirebaseSyncService.createUserProfileIfNotExists(
+        userId: userProfile.uid,
+        displayName: userProfile.displayName,
+        email: userProfile.email,
+        photoURL: userProfile.photoURL,
+      );
+
+      // Sync data from Firebase to local storage
+      await _syncUserDataOnLogin(userProfile.uid);
+
       if (kDebugMode) {
         print('✅ Email user created successfully: ${userProfile.displayName}');
+        print('✅ User data synced from cloud');
       }
     } catch (e) {
       _setError(e.toString());
@@ -212,11 +250,19 @@ class AuthProvider extends ChangeNotifier {
     _clearError();
 
     try {
+      final userId = _user?.uid;
+
       await AuthService.deleteAccount();
+
+      // Clear user data from Firebase if user ID is available
+      if (userId != null) {
+        await FirebaseSyncService.deleteUserDataFromCloud(userId);
+      }
+
       _user = null;
 
       if (kDebugMode) {
-        print('✅ User account deleted successfully');
+        print('✅ User account and data deleted successfully');
       }
     } catch (e) {
       _setError('Failed to delete account: $e');
@@ -305,6 +351,25 @@ class AuthProvider extends ChangeNotifier {
       if (kDebugMode) {
         print('❌ Emergency sign out failed: $e');
       }
+    }
+  }
+
+  /// Sync user data from Firebase to local storage on login
+  Future<void> _syncUserDataOnLogin(String userId) async {
+    try {
+      // Initialize tracking service and sync data
+      final trackingService = PersonalTrackingService();
+      await trackingService.syncFromCloudToLocal(userId);
+
+      if (kDebugMode) {
+        print('✅ User tracking data synced from Firebase');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('⚠️ Warning: Failed to sync user data from Firebase: $e');
+        print('🔄 Continuing with local data...');
+      }
+      // Don't throw error, allow user to continue login even if sync fails
     }
   }
 }

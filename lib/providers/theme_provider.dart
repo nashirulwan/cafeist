@@ -79,6 +79,32 @@ class ThemeProvider extends ChangeNotifier {
   ThemeData get lightTheme => _morningTheme;
   ThemeData get darkTheme => _eveningTheme;
 
+  // Check if current theme is dark mode
+  bool get isDarkMode {
+    switch (_currentTheme) {
+      case CoffeeTheme.evening:
+      case CoffeeTheme.midnight:
+        return true;
+      case CoffeeTheme.morning:
+      case CoffeeTheme.sunset:
+        return false;
+    }
+  }
+
+  // Get card color for current theme
+  Color get cardColor {
+    switch (_currentTheme) {
+      case CoffeeTheme.morning:
+        return Colors.white.withOpacity(0.8);
+      case CoffeeTheme.evening:
+        return const Color(0xFF1F2937).withOpacity(0.8);
+      case CoffeeTheme.sunset:
+        return Colors.white.withOpacity(0.8);
+      case CoffeeTheme.midnight:
+        return const Color(0xFF111111);
+    }
+  }
+
   // Background color getter
   Color get backgroundColor {
     switch (_currentTheme) {
