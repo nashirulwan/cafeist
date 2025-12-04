@@ -194,13 +194,15 @@ class CoffeeShopProvider extends ChangeNotifier {
 
         // Calculate distances for all cafes
         _coffeeShops = _coffeeShops.map((cafe) {
-          final distance = Geolocator.distanceBetween(
+          final distanceInMeters = Geolocator.distanceBetween(
             _userLatitude,
             _userLongitude,
             cafe.latitude,
             cafe.longitude,
           );
-          return cafe.copyWith(distance: distance);
+          // Convert meters to kilometers
+          final distanceInKm = distanceInMeters / 1000.0;
+          return cafe.copyWith(distance: distanceInKm);
         }).toList();
 
         // Sort by distance
@@ -246,13 +248,15 @@ class CoffeeShopProvider extends ChangeNotifier {
       // Calculate distances if we have user location
       if (_userLatitude != 0.0 && _userLongitude != 0.0) {
         _coffeeShops = _coffeeShops.map((cafe) {
-          final distance = Geolocator.distanceBetween(
+          final distanceInMeters = Geolocator.distanceBetween(
             _userLatitude,
             _userLongitude,
             cafe.latitude,
             cafe.longitude,
           );
-          return cafe.copyWith(distance: distance);
+          // Convert meters to kilometers
+          final distanceInKm = distanceInMeters / 1000.0;
+          return cafe.copyWith(distance: distanceInKm);
         }).toList();
 
         // Sort by distance
@@ -272,7 +276,7 @@ class CoffeeShopProvider extends ChangeNotifier {
   void _applyActiveFilter() {
     switch (_activeFilter) {
       case 'nearby':
-        final nearby = _coffeeShops.where((cafe) => cafe.distance <= 5000).toList(); // 5km in meters
+        final nearby = _coffeeShops.where((cafe) => cafe.distance <= 5.0).toList(); // 5km in kilometers
         nearby.sort((a, b) => a.distance.compareTo(b.distance)); // Sort by distance
         _nearbyCoffeeShops = nearby.take(_currentLimit).toList();
         _hasMoreCafes = _coffeeShops.length > _currentLimit && nearby.length >= _currentLimit;

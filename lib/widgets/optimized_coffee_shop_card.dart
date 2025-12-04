@@ -161,7 +161,7 @@ class OptimizedCoffeeShopCard extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
         ),
 
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
 
         // Stats Row with optimized layout
         Row(
@@ -171,19 +171,13 @@ class OptimizedCoffeeShopCard extends StatelessWidget {
               Icons.location_on,
               Colors.blue,
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 4),
             _buildInfoChip(
               coffeeShop.rating.toStringAsFixed(1),
               Icons.star,
               Colors.amber,
             ),
-            const SizedBox(width: 8),
-            _buildInfoChip(
-              '${coffeeShop.reviewCount}',
-              Icons.reviews,
-              Colors.green,
-            ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 4),
             _buildStatusChip(coffeeShop.isOpen),
           ],
         ),
@@ -193,10 +187,10 @@ class OptimizedCoffeeShopCard extends StatelessWidget {
 
   Widget _buildInfoChip(String text, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -204,13 +198,13 @@ class OptimizedCoffeeShopCard extends StatelessWidget {
           Icon(
             icon,
             color: color,
-            size: 14,
+            size: 11,
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 2),
           Text(
             text,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 10,
               fontWeight: FontWeight.w600,
               color: color,
             ),
@@ -222,10 +216,10 @@ class OptimizedCoffeeShopCard extends StatelessWidget {
 
   Widget _buildStatusChip(bool isOpen) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
         color: (isOpen ? Colors.green : Colors.red).withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -233,13 +227,13 @@ class OptimizedCoffeeShopCard extends StatelessWidget {
           Icon(
             isOpen ? Icons.access_time : Icons.access_time_filled,
             color: isOpen ? Colors.green : Colors.red,
-            size: 14,
+            size: 11,
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 2),
           Text(
             isOpen ? 'Open' : 'Closed',
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 10,
               fontWeight: FontWeight.w600,
               color: isOpen ? Colors.green : Colors.red,
             ),
