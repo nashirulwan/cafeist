@@ -165,9 +165,9 @@ class CafeCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: statusColor.withOpacity(0.1),
+        color: statusColor.withValues(alpha:0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: statusColor.withOpacity(0.3)),
+        border: Border.all(color: statusColor.withValues(alpha:0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -225,7 +225,7 @@ class CafeCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
-              color: Colors.green.withOpacity(0.1),
+              color: Colors.green.withValues(alpha:0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
@@ -262,15 +262,15 @@ class CafeCard extends StatelessWidget {
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: cafe.trackingStatus == CafeTrackingStatus.wantToVisit
-                    ? Colors.green.withOpacity(0.1)
-                    : Colors.pink.withOpacity(0.1),
+                    ? Colors.green.withValues(alpha:0.1)
+                    : Colors.pink.withValues(alpha:0.1),
                 foregroundColor: cafe.trackingStatus == CafeTrackingStatus.wantToVisit
                     ? Colors.green
                     : Colors.pink,
                 side: BorderSide(
                   color: cafe.trackingStatus == CafeTrackingStatus.wantToVisit
-                      ? Colors.green.withOpacity(0.3)
-                      : Colors.pink.withOpacity(0.3),
+                      ? Colors.green.withValues(alpha:0.3)
+                      : Colors.pink.withValues(alpha:0.3),
                 ),
                 padding: const EdgeInsets.symmetric(vertical: 8),
               ),
@@ -283,9 +283,9 @@ class CafeCard extends StatelessWidget {
             onPressed: onRemove,
             icon: const Icon(Icons.delete_outline),
             style: IconButton.styleFrom(
-              backgroundColor: Colors.red.withOpacity(0.1),
+              backgroundColor: Colors.red.withValues(alpha:0.1),
               foregroundColor: Colors.red,
-              side: BorderSide(color: Colors.red.withOpacity(0.3)),
+              side: BorderSide(color: Colors.red.withValues(alpha:0.3)),
             ),
           ),
         ],
@@ -372,7 +372,7 @@ class SimpleCafeCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
+                  color: Colors.green.withValues(alpha:0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(

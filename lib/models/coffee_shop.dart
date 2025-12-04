@@ -347,7 +347,7 @@ class VisitData {
   static double? extractRatingFromVisitData(Map<String, dynamic>? visitData) {
     if (visitData == null) return null;
 
-    final rating = visitData!['personalRating'];
+    final rating = visitData['personalRating'];
     if (rating == null) return null;
     if (rating is double) return rating;
     if (rating is int) return rating.toDouble();

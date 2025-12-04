@@ -95,11 +95,11 @@ class ThemeProvider extends ChangeNotifier {
   Color get cardColor {
     switch (_currentTheme) {
       case CoffeeTheme.morning:
-        return Colors.white.withOpacity(0.8);
+        return Colors.white.withValues(alpha: 0.8);
       case CoffeeTheme.evening:
-        return const Color(0xFF1F2937).withOpacity(0.8);
+        return const Color(0xFF1F2937).withValues(alpha: 0.8);
       case CoffeeTheme.sunset:
-        return Colors.white.withOpacity(0.8);
+        return Colors.white.withValues(alpha: 0.8);
       case CoffeeTheme.midnight:
         return const Color(0xFF111111);
     }
@@ -183,12 +183,12 @@ class ThemeProvider extends ChangeNotifier {
       // Glass Card Theme
       cardTheme: CardThemeData(
         elevation: 8,
-        shadowColor: Colors.black.withOpacity(0.1),
+        shadowColor: Colors.black.withValues(alpha: 0.1),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
-        color: Colors.white.withOpacity(0.8),
-        surfaceTintColor: Colors.white.withOpacity(0.5),
+        color: Colors.white.withValues(alpha: 0.8),
+        surfaceTintColor: Colors.white.withValues(alpha: 0.5),
       ),
 
       // Modern Button Theme
@@ -197,7 +197,7 @@ class ThemeProvider extends ChangeNotifier {
           backgroundColor: const Color(0xFFD2691E),
           foregroundColor: Colors.white,
           elevation: 4,
-          shadowColor: const Color(0xFFD2691E).withOpacity(0.3),
+          shadowColor: const Color(0xFFD2691E).withValues(alpha: 0.3),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -208,7 +208,7 @@ class ThemeProvider extends ChangeNotifier {
       // Glass Input Theme
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Colors.white.withOpacity(0.7),
+        fillColor: Colors.white.withValues(alpha: 0.7),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
@@ -268,7 +268,7 @@ class ThemeProvider extends ChangeNotifier {
 
       // Glass Bottom Navigation
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
-        backgroundColor: Colors.white.withOpacity(0.9),
+        backgroundColor: Colors.white.withValues(alpha: 0.9),
         selectedItemColor: const Color(0xFFD2691E),
         unselectedItemColor: Colors.grey.shade600,
         type: BottomNavigationBarType.fixed,
@@ -302,12 +302,12 @@ class ThemeProvider extends ChangeNotifier {
       // Dark Glass Cards
       cardTheme: CardThemeData(
         elevation: 12,
-        shadowColor: Colors.black.withOpacity(0.3),
+        shadowColor: Colors.black.withValues(alpha: 0.3),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
-        color: const Color(0xFF1F2937).withOpacity(0.8),
-        surfaceTintColor: const Color(0xFF6B46C1).withOpacity(0.2),
+        color: const Color(0xFF1F2937).withValues(alpha: 0.8),
+        surfaceTintColor: const Color(0xFF6B46C1).withValues(alpha: 0.2),
       ),
 
       // Elegant Button Theme
@@ -316,7 +316,7 @@ class ThemeProvider extends ChangeNotifier {
           backgroundColor: const Color(0xFF6B46C1),
           foregroundColor: Colors.white,
           elevation: 6,
-          shadowColor: const Color(0xFF6B46C1).withOpacity(0.4),
+          shadowColor: const Color(0xFF6B46C1).withValues(alpha: 0.4),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -327,7 +327,7 @@ class ThemeProvider extends ChangeNotifier {
       // Dark Input Theme
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: const Color(0xFF1F2937).withOpacity(0.7),
+        fillColor: const Color(0xFF1F2937).withValues(alpha: 0.7),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
@@ -387,7 +387,7 @@ class ThemeProvider extends ChangeNotifier {
 
       // Dark Bottom Navigation
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
-        backgroundColor: const Color(0xFF1E1B4B).withOpacity(0.95),
+        backgroundColor: const Color(0xFF1E1B4B).withValues(alpha: 0.95),
         selectedItemColor: const Color(0xFFF3E8FF),
         unselectedItemColor: const Color(0xFF9CA3AF),
         type: BottomNavigationBarType.fixed,
@@ -421,12 +421,12 @@ class ThemeProvider extends ChangeNotifier {
       // Gradient Cards
       cardTheme: CardThemeData(
         elevation: 10,
-        shadowColor: const Color(0xFFEC4899).withOpacity(0.2),
+        shadowColor: const Color(0xFFEC4899).withValues(alpha: 0.2),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
-        color: Colors.white.withOpacity(0.8),
-        surfaceTintColor: const Color(0xFFEC4899).withOpacity(0.1),
+        color: Colors.white.withValues(alpha: 0.8),
+        surfaceTintColor: const Color(0xFFEC4899).withValues(alpha: 0.1),
       ),
 
       // Vibrant Button Theme
@@ -435,7 +435,7 @@ class ThemeProvider extends ChangeNotifier {
           backgroundColor: const Color(0xFFEC4899),
           foregroundColor: Colors.white,
           elevation: 6,
-          shadowColor: const Color(0xFFEC4899).withOpacity(0.4),
+          shadowColor: const Color(0xFFEC4899).withValues(alpha: 0.4),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -446,7 +446,7 @@ class ThemeProvider extends ChangeNotifier {
       // Sunset Input Theme
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Colors.white.withOpacity(0.7),
+        fillColor: Colors.white.withValues(alpha: 0.7),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
@@ -454,7 +454,7 @@ class ThemeProvider extends ChangeNotifier {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: const Color(0xFFEC4899).withOpacity(0.3)),
+          borderSide: BorderSide(color: const Color(0xFFEC4899).withValues(alpha: 0.3)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
@@ -506,7 +506,7 @@ class ThemeProvider extends ChangeNotifier {
 
       // Sunset Bottom Navigation
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
-        backgroundColor: Colors.white.withOpacity(0.9),
+        backgroundColor: Colors.white.withValues(alpha: 0.9),
         selectedItemColor: const Color(0xFFEC4899),
         unselectedItemColor: Colors.grey.shade600,
         type: BottomNavigationBarType.fixed,
@@ -544,12 +544,12 @@ class ThemeProvider extends ChangeNotifier {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(
-            color: const Color(0xFF10B981).withOpacity(0.2),
+            color: const Color(0xFF10B981).withValues(alpha: 0.2),
             width: 1,
           ),
         ),
         color: const Color(0xFF111111),
-        surfaceTintColor: const Color(0xFF10B981).withOpacity(0.1),
+        surfaceTintColor: const Color(0xFF10B981).withValues(alpha: 0.1),
       ),
 
       // Professional Button Theme
@@ -577,7 +577,7 @@ class ThemeProvider extends ChangeNotifier {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: const Color(0xFF10B981).withOpacity(0.3)),
+          borderSide: BorderSide(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),

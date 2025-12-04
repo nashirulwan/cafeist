@@ -9,6 +9,7 @@ class OptimizedCoffeeShopCard extends StatelessWidget {
   final VoidCallback? onTap;
 
   const OptimizedCoffeeShopCard({
+    super.key,
     required this.coffeeShop,
     this.onTap,
   });
@@ -33,8 +34,8 @@ class OptimizedCoffeeShopCard extends StatelessWidget {
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          themeProvider.cardColor.withOpacity(0.8),
-                          themeProvider.cardColor.withOpacity(0.6),
+                          themeProvider.cardColor.withValues(alpha:0.8),
+                          themeProvider.cardColor.withValues(alpha:0.6),
                         ],
                       )
                     : null,
@@ -42,7 +43,7 @@ class OptimizedCoffeeShopCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha:0.1),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -74,7 +75,7 @@ class OptimizedCoffeeShopCard extends StatelessWidget {
       height: 80,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: themeProvider.secondaryTextColor.withOpacity(0.1),
+        color: themeProvider.secondaryTextColor.withValues(alpha:0.1),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
@@ -91,7 +92,7 @@ class OptimizedCoffeeShopCard extends StatelessWidget {
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: themeProvider.secondaryTextColor.withOpacity(0.2),
+                    color: themeProvider.secondaryTextColor.withValues(alpha:0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -104,7 +105,7 @@ class OptimizedCoffeeShopCard extends StatelessWidget {
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
+                    color: Colors.red.withValues(alpha:0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -120,7 +121,7 @@ class OptimizedCoffeeShopCard extends StatelessWidget {
                 width: 80,
                 height: 80,
                 decoration: BoxDecoration(
-                  color: themeProvider.accentColor.withOpacity(0.1),
+                  color: themeProvider.accentColor.withValues(alpha:0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
@@ -189,7 +190,7 @@ class OptimizedCoffeeShopCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha:0.1),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Row(
@@ -218,7 +219,7 @@ class OptimizedCoffeeShopCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: (isOpen ? Colors.green : Colors.red).withOpacity(0.1),
+        color: (isOpen ? Colors.green : Colors.red).withValues(alpha:0.1),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Row(

@@ -275,9 +275,9 @@ class _AddVisitDialogState extends State<AddVisitDialog> {
                       return Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF6F4E37).withOpacity(0.1),
+                          color: const Color(0xFF6F4E37).withValues(alpha:0.1),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFF6F4E37).withOpacity(0.3)),
+                          border: Border.all(color: const Color(0xFF6F4E37).withValues(alpha:0.3)),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -576,9 +576,9 @@ class _VisitDetailsDialogState extends State<VisitDetailsDialog> {
                     return Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF6F4E37).withOpacity(0.1),
+                        color: const Color(0xFF6F4E37).withValues(alpha:0.1),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFF6F4E37).withOpacity(0.3)),
+                        border: Border.all(color: const Color(0xFF6F4E37).withValues(alpha:0.3)),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,

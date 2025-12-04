@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/coffee_shop_provider.dart';
 import '../providers/theme_provider.dart';
+import '../providers/location_discovery_provider.dart';
 import '../models/coffee_shop.dart';
 import '../widgets/glass_container.dart';
 import '../widgets/location_header.dart';
@@ -41,8 +42,8 @@ class SimpleChip extends StatelessWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    theme.primaryColor.withOpacity(0.8),
-                    theme.primaryColor.withOpacity(0.6),
+                    theme.primaryColor.withValues(alpha: 0.8),
+                    theme.primaryColor.withValues(alpha: 0.6),
                   ],
                 )
               : null,
@@ -51,7 +52,7 @@ class SimpleChip extends StatelessWidget {
           border: Border.all(
             color: selected
                 ? Colors.transparent
-                : theme.primaryColor.withOpacity(0.3),
+                : theme.primaryColor.withValues(alpha: 0.3),
             width: 1,
           ),
         ),
@@ -117,7 +118,7 @@ class SimpleCoffeeCard extends StatelessWidget {
               height: 80,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                color: Colors.grey.withOpacity(0.2),
+                color: Colors.grey.withValues(alpha: 0.2),
               ),
               child: imageUrl != null
                   ? ClipRRect(
@@ -126,11 +127,11 @@ class SimpleCoffeeCard extends StatelessWidget {
                         imageUrl: imageUrl!,
                         fit: BoxFit.cover,
                         placeholder: (context, url) => Container(
-                          color: Colors.grey.withOpacity(0.3),
+                          color: Colors.grey.withValues(alpha: 0.3),
                           child: const Icon(Icons.coffee, color: Colors.grey),
                         ),
                         errorWidget: (context, url, error) => Container(
-                          color: Colors.grey.withOpacity(0.3),
+                          color: Colors.grey.withValues(alpha: 0.3),
                           child: const Icon(Icons.error, color: Colors.grey),
                         ),
                       ),
@@ -138,7 +139,7 @@ class SimpleCoffeeCard extends StatelessWidget {
                   : Container(
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
-                        color: theme.primaryColor.withOpacity(0.1),
+                        color: theme.primaryColor.withValues(alpha: 0.1),
                       ),
                       child: const Icon(Icons.coffee, color: Colors.white),
                     ),
@@ -167,7 +168,8 @@ class SimpleCoffeeCard extends StatelessWidget {
                     description,
                     style: GoogleFonts.inter(
                       fontSize: 12,
-                      color: theme.textTheme.bodyMedium?.color?.withOpacity(0.8),
+                      color: theme.textTheme.bodyMedium?.color
+                          ?.withValues(alpha: 0.8),
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -179,15 +181,17 @@ class SimpleCoffeeCard extends StatelessWidget {
                     children: [
                       // Distance
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: Colors.blue.withOpacity(0.1),
+                          color: Colors.blue.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.location_on, color: Colors.blue, size: 16),
+                            const Icon(Icons.location_on,
+                                color: Colors.blue, size: 16),
                             const SizedBox(width: 4),
                             Text(
                               distance,
@@ -222,9 +226,12 @@ class SimpleCoffeeCard extends StatelessWidget {
                       // Status
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: isOpen ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                          color: isOpen
+                              ? Colors.green.withValues(alpha: 0.1)
+                              : Colors.red.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -278,8 +285,8 @@ class ModernChip extends StatelessWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    theme.primaryColor.withOpacity(0.8),
-                    theme.primaryColor.withOpacity(0.6),
+                    theme.primaryColor.withValues(alpha: 0.8),
+                    theme.primaryColor.withValues(alpha: 0.6),
                   ],
                 )
               : null,
@@ -288,7 +295,7 @@ class ModernChip extends StatelessWidget {
           border: Border.all(
             color: selected
                 ? Colors.transparent
-                : theme.primaryColor.withOpacity(0.3),
+                : theme.primaryColor.withValues(alpha: 0.3),
             width: 1,
           ),
         ),
@@ -343,7 +350,7 @@ class CoffeeShopCard extends StatelessWidget {
               height: 80,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                color: Colors.grey.withOpacity(0.2),
+                color: Colors.grey.withValues(alpha: 0.2),
               ),
               child: imageUrl != null
                   ? ClipRRect(
@@ -352,11 +359,11 @@ class CoffeeShopCard extends StatelessWidget {
                         imageUrl: imageUrl!,
                         fit: BoxFit.cover,
                         placeholder: (context, url) => Container(
-                          color: Colors.grey.withOpacity(0.3),
+                          color: Colors.grey.withValues(alpha: 0.3),
                           child: const Icon(Icons.coffee, color: Colors.grey),
                         ),
                         errorWidget: (context, url, error) => Container(
-                          color: Colors.grey.withOpacity(0.3),
+                          color: Colors.grey.withValues(alpha: 0.3),
                           child: const Icon(Icons.error, color: Colors.grey),
                         ),
                       ),
@@ -364,7 +371,7 @@ class CoffeeShopCard extends StatelessWidget {
                   : Container(
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
-                        color: theme.primaryColor.withOpacity(0.1),
+                        color: theme.primaryColor.withValues(alpha: 0.1),
                       ),
                       child: const Icon(Icons.coffee, color: Colors.white),
                     ),
@@ -390,7 +397,8 @@ class CoffeeShopCard extends StatelessWidget {
                     description,
                     style: GoogleFonts.inter(
                       fontSize: 12,
-                      color: theme.textTheme.bodyMedium?.color?.withOpacity(0.8),
+                      color: theme.textTheme.bodyMedium?.color
+                          ?.withValues(alpha: 0.8),
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -400,9 +408,10 @@ class CoffeeShopCard extends StatelessWidget {
                     children: [
                       // Distance
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: Colors.blue.withOpacity(0.1),
+                          color: Colors.blue.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
@@ -437,9 +446,12 @@ class CoffeeShopCard extends StatelessWidget {
 
                       // Status
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: isOpen ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                          color: isOpen
+                              ? Colors.green.withValues(alpha: 0.1)
+                              : Colors.red.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
@@ -480,7 +492,7 @@ class _HomeScreenState extends State<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<CoffeeShopProvider>();
       // Only update if we don't have any data yet or location has changed significantly
-    if (provider.nearbyCoffeeShops.isEmpty) {
+      if (provider.nearbyCoffeeShops.isEmpty) {
         provider.updateNearbyCoffeeShops();
       }
     });
@@ -497,11 +509,12 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               // Header
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 child: Row(
                   children: [
                     Text(
-                      'Coffee Finder',
+                      'cafeist.',
                       style: GoogleFonts.inter(
                         fontSize: 24,
                         fontWeight: FontWeight.w600,
@@ -521,11 +534,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   if (provider.userLocation.contains(',')) {
                     final parts = provider.userLocation.split(',');
-                    district = parts[0].trim().isNotEmpty ? parts[0].trim() : 'Kecamatan';
-                    city = parts.length > 1 && parts[1].trim().isNotEmpty ? parts[1].trim() : 'Kota';
+                    district = parts[0].trim().isNotEmpty
+                        ? parts[0].trim()
+                        : 'Kecamatan';
+                    city = parts.length > 1 && parts[1].trim().isNotEmpty
+                        ? parts[1].trim()
+                        : 'Kota';
                   } else if (provider.userLocation.isNotEmpty &&
-                             provider.userLocation != 'Getting location...' &&
-                             provider.userLocation != 'Unknown Location') {
+                      provider.userLocation != 'Getting location...' &&
+                      provider.userLocation != 'Unknown Location') {
                     district = provider.userLocation;
                     city = 'Indonesia';
                   }
@@ -545,7 +562,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Consumer<ThemeProvider>(
                   builder: (context, themeProvider, child) {
                     return GlassContainer(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
                       borderRadius: BorderRadius.circular(16),
                       child: Row(
                         children: [
@@ -561,7 +579,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               decoration: InputDecoration(
                                 hintText: 'Search cafes, coffee, or vibes...',
                                 hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                                  color: themeProvider.secondaryTextColor.withOpacity(0.6),
+                                  color: themeProvider.secondaryTextColor
+                                      .withValues(alpha: 0.6),
                                 ),
                                 border: InputBorder.none,
                                 contentPadding: EdgeInsets.zero,
@@ -571,9 +590,13 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               onChanged: (value) {
                                 // Debounced search to avoid too many API calls
-                                Future.delayed(const Duration(milliseconds: 500), () {
-                                  if (_searchController.text == value) {  // Check if still the same query
-                                    context.read<CoffeeShopProvider>().searchCoffeeShops(value);
+                                Future.delayed(
+                                    const Duration(milliseconds: 500), () {
+                                  if (_searchController.text == value) {
+                                    // Check if still the same query
+                                    context
+                                        .read<CoffeeShopProvider>()
+                                        .searchCoffeeShops(value);
                                   }
                                 });
                               },
@@ -583,7 +606,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             GestureDetector(
                               onTap: () {
                                 _searchController.clear();
-                                context.read<CoffeeShopProvider>().searchCoffeeShops('');
+                                context
+                                    .read<CoffeeShopProvider>()
+                                    .searchCoffeeShops('');
                               },
                               child: Icon(
                                 Icons.close,
@@ -683,7 +708,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 Icon(
                                   Icons.error_outline,
                                   size: 64,
-                                  color: themeProvider.accentColor.withOpacity(0.5),
+                                  color: themeProvider.accentColor
+                                      .withValues(alpha: 0.5),
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
@@ -696,23 +722,27 @@ class _HomeScreenState extends State<HomeScreen> {
                                 Text(
                                   provider.error ?? 'No coffee shops available',
                                   style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: themeProvider.secondaryTextColor.withOpacity(0.7),
+                                    color: themeProvider.secondaryTextColor
+                                        .withValues(alpha: 0.7),
                                   ),
                                   textAlign: TextAlign.center,
                                 ),
-                                if (provider.error != null && provider.error!.contains('offline')) ...[
+                                if (provider.error != null &&
+                                    provider.error!.contains('offline')) ...[
                                   const SizedBox(height: 8),
                                   Text(
                                     'Using local coffee shop database',
                                     style: theme.textTheme.bodySmall?.copyWith(
-                                      color: themeProvider.secondaryTextColor.withOpacity(0.5),
+                                      color: themeProvider.secondaryTextColor
+                                          .withValues(alpha: 0.5),
                                     ),
                                     textAlign: TextAlign.center,
                                   ),
                                 ],
                                 const SizedBox(height: 24),
                                 GlassContainer(
-                                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 24, vertical: 12),
                                   borderRadius: BorderRadius.circular(16),
                                   color: themeProvider.accentColor,
                                   opacity: 0.9,
@@ -740,7 +770,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     return SingleChildScrollView(
                       child: Column(
                         children: [
-
                           const SizedBox(height: 12),
 
                           // Coffee Shop List
@@ -755,20 +784,26 @@ class _HomeScreenState extends State<HomeScreen> {
                                         Icon(
                                           Icons.coffee_outlined,
                                           size: 64,
-                                          color: themeProvider.accentColor.withOpacity(0.5),
+                                          color: themeProvider.accentColor
+                                              .withValues(alpha: 0.5),
                                         ),
                                         const SizedBox(height: 16),
                                         Text(
                                           'No cafes found nearby',
-                                          style: theme.textTheme.titleLarge?.copyWith(
-                                            color: themeProvider.primaryTextColor,
+                                          style: theme.textTheme.titleLarge
+                                              ?.copyWith(
+                                            color:
+                                                themeProvider.primaryTextColor,
                                           ),
                                         ),
                                         const SizedBox(height: 8),
                                         Text(
                                           'Try refreshing or search terms',
-                                          style: theme.textTheme.bodyMedium?.copyWith(
-                                            color: themeProvider.secondaryTextColor.withOpacity(0.7),
+                                          style: theme.textTheme.bodyMedium
+                                              ?.copyWith(
+                                            color: themeProvider
+                                                .secondaryTextColor
+                                                .withValues(alpha: 0.7),
                                           ),
                                           textAlign: TextAlign.center,
                                         ),
@@ -789,19 +824,23 @@ class _HomeScreenState extends State<HomeScreen> {
                               // Performance optimization: cache extent for better performance
                               cacheExtent: 500.0,
                               itemBuilder: (context, index) {
-                                final coffeeShop = provider.nearbyCoffeeShops[index];
+                                final coffeeShop =
+                                    provider.nearbyCoffeeShops[index];
                                 return OptimizedCoffeeShopCard(
                                   coffeeShop: coffeeShop,
                                   onTap: () {
                                     Navigator.push(
                                       context,
                                       PageRouteBuilder(
-                                        pageBuilder: (context, animation, secondaryAnimation) =>
+                                        pageBuilder: (context, animation,
+                                                secondaryAnimation) =>
                                             CoffeeShopDetailScreen(
-                                              coffeeShop: coffeeShop,
-                                            ),
-                                        transitionDuration: const Duration(milliseconds: 300),
-                                        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                                          coffeeShop: coffeeShop,
+                                        ),
+                                        transitionDuration:
+                                            const Duration(milliseconds: 300),
+                                        transitionsBuilder: (context, animation,
+                                            secondaryAnimation, child) {
                                           return SlideTransition(
                                             position: Tween<Offset>(
                                               begin: const Offset(1.0, 0.0),
@@ -855,10 +894,18 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showLocationSelector(BuildContext context) {
-    // TODO: Implement location selector
+    final List<Map<String, dynamic>> jakartaDistricts = [
+      {'name': 'Jakarta Pusat', 'lat': -6.1944, 'lng': 106.8229},
+      {'name': 'Jakarta Utara', 'lat': -6.1384, 'lng': 106.8759},
+      {'name': 'Jakarta Barat', 'lat': -6.1755, 'lng': 106.7952},
+      {'name': 'Jakarta Selatan', 'lat': -6.2615, 'lng': 106.8106},
+      {'name': 'Jakarta Timur', 'lat': -6.2485, 'lng': 106.8755},
+    ];
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (context) => GlassContainer(
         margin: const EdgeInsets.all(16),
         padding: const EdgeInsets.all(24),
@@ -872,13 +919,171 @@ class _HomeScreenState extends State<HomeScreen> {
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 16),
-            // TODO: Add district selection
+            const SizedBox(height: 8),
             Text(
-              'District selection coming soon...',
+              'Choose a district to find coffee shops nearby',
               style: GoogleFonts.inter(
+                fontSize: 14,
                 color: Colors.grey,
               ),
+            ),
+            const SizedBox(height: 20),
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.6,
+              ),
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: jakartaDistricts.length,
+                itemBuilder: (context, index) {
+                  final district = jakartaDistricts[index];
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () async {
+                          Navigator.pop(context);
+
+                          // Update location provider with selected district
+                          final locationProvider =
+                              Provider.of<LocationDiscoveryProvider>(
+                            context,
+                            listen: false,
+                          );
+
+                          await locationProvider.updateLocation(
+                            district['lat'],
+                            district['lng'],
+                          );
+
+                          // Refresh coffee shops with new location
+                          final coffeeProvider =
+                              Provider.of<CoffeeShopProvider>(
+                            context,
+                            listen: false,
+                          );
+
+                          await coffeeProvider.refreshCoffeeShops();
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                  'Location updated to ${district['name']}'),
+                              backgroundColor: Colors.green,
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: Colors.grey.withValues(alpha: 0.3),
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context)
+                                      .primaryColor
+                                      .withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(
+                                  Icons.location_on,
+                                  color: Theme.of(context).primaryColor,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      district['name'],
+                                      style: GoogleFonts.inter(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Tap to search coffee shops here',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 12,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Icon(
+                                Icons.arrow_forward_ios,
+                                size: 16,
+                                color: Colors.grey[600],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () async {
+                      Navigator.pop(context);
+
+                      // Use current GPS location
+                      final locationProvider =
+                          Provider.of<LocationDiscoveryProvider>(
+                        context,
+                        listen: false,
+                      );
+
+                      try {
+                        await locationProvider.refreshLocation();
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Using your current location'),
+                            backgroundColor: Colors.green,
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Failed to get location: $e'),
+                            backgroundColor: Colors.red,
+                            duration: const Duration(seconds: 3),
+                          ),
+                        );
+                      }
+                    },
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.gps_fixed,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
+                        Text('Use GPS Location'),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

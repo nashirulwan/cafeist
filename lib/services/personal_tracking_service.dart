@@ -1,7 +1,5 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:uuid/uuid.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../models/coffee_shop.dart';
 import 'firebase_sync_service.dart';
 
@@ -11,8 +9,7 @@ class PersonalTrackingService {
   static const String _favoritesKey = 'user_favorites';
   static const String _statsKey = 'user_stats';
 
-  final Uuid _uuid = const Uuid();
-
+  
   /// Save visit data for a coffee shop (with Firebase sync)
   Future<void> saveVisitData(String coffeeShopId, VisitData visitData) async {
     try {

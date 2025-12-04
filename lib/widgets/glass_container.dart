@@ -43,14 +43,14 @@ class GlassContainer extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: borderRadius ?? BorderRadius.circular(20),
         border: border ?? Border.all(
-          color: (color ?? theme.primaryColor).withOpacity(0.2),
+          color: (color ?? theme.primaryColor).withValues(alpha:0.2),
           width: 1,
         ),
         boxShadow: boxShadow ?? [
           BoxShadow(
             color: isDark
-                ? Colors.black.withOpacity(0.3)
-                : Colors.black.withOpacity(0.1),
+                ? Colors.black.withValues(alpha:0.3)
+                : Colors.black.withValues(alpha:0.1),
             blurRadius: blur,
             offset: const Offset(0, 4),
           ),
@@ -62,9 +62,9 @@ class GlassContainer extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: borderRadius ?? BorderRadius.circular(20),
             color: (color ?? (isDark ? Colors.white : Colors.black))
-                .withOpacity(opacity * 0.3), // Reduce opacity significantly
+                .withValues(alpha:opacity * 0.3), // Reduce opacity significantly
             border: Border.all(
-              color: theme.primaryColor.withOpacity(0.1),
+              color: theme.primaryColor.withValues(alpha:0.1),
               width: 1,
             ),
           ),
@@ -99,7 +99,7 @@ class GlassCard extends StatelessWidget {
     return Card(
       margin: margin,
       elevation: elevation,
-      shadowColor: theme.primaryColor.withOpacity(0.2),
+      shadowColor: theme.primaryColor.withValues(alpha:0.2),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
       ),
@@ -113,7 +113,7 @@ class GlassCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(20),
             color: theme.cardColor,
             border: Border.all(
-              color: theme.primaryColor.withOpacity(0.1),
+              color: theme.primaryColor.withValues(alpha:0.1),
               width: 1,
             ),
           ),
@@ -151,11 +151,11 @@ class GradientBackground extends StatelessWidget {
           colors: colors ?? (isDark
               ? [
                   theme.scaffoldBackgroundColor,
-                  theme.scaffoldBackgroundColor.withOpacity(0.8),
+                  theme.scaffoldBackgroundColor.withValues(alpha:0.8),
                 ]
               : [
                   theme.scaffoldBackgroundColor,
-                  Colors.white.withOpacity(0.9),
+                  Colors.white.withValues(alpha:0.9),
                 ]),
         ),
       ),
@@ -184,9 +184,6 @@ class ModernChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
         return GestureDetector(
@@ -269,7 +266,7 @@ class CoffeeShopCard extends StatelessWidget {
                   height: 80,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
-                    color: themeProvider.accentColor.withOpacity(0.1),
+                    color: themeProvider.accentColor.withValues(alpha:0.1),
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(16),
@@ -319,8 +316,8 @@ class CoffeeShopCard extends StatelessWidget {
                             ),
                             decoration: BoxDecoration(
                               color: isOpen
-                                  ? Colors.green.withOpacity(0.2)
-                                  : Colors.red.withOpacity(0.2),
+                                  ? Colors.green.withValues(alpha:0.2)
+                                  : Colors.red.withValues(alpha:0.2),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
@@ -340,7 +337,7 @@ class CoffeeShopCard extends StatelessWidget {
                       Text(
                         description,
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          color: themeProvider.secondaryTextColor.withOpacity(0.8),
+                          color: themeProvider.secondaryTextColor.withValues(alpha:0.8),
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,

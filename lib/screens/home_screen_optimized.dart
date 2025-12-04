@@ -109,7 +109,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               decoration: InputDecoration(
                                 hintText: 'Search cafes, coffee, or vibes...',
                                 hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                                  color: themeProvider.secondaryTextColor.withOpacity(0.6),
+                                  color: themeProvider.secondaryTextColor.withValues(alpha:0.6),
                                 ),
                                 border: InputBorder.none,
                                 contentPadding: EdgeInsets.zero,
@@ -238,7 +238,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 Icon(
                                   Icons.error_outline,
                                   size: 64,
-                                  color: themeProvider.accentColor.withOpacity(0.5),
+                                  color: themeProvider.accentColor.withValues(alpha:0.5),
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
@@ -251,7 +251,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 Text(
                                   provider.error ?? 'No coffee shops available',
                                   style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: themeProvider.secondaryTextColor.withOpacity(0.7),
+                                    color: themeProvider.secondaryTextColor.withValues(alpha:0.7),
                                   ),
                                   textAlign: TextAlign.center,
                                 ),
@@ -260,7 +260,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   Text(
                                     'Using local coffee shop database',
                                     style: theme.textTheme.bodySmall?.copyWith(
-                                      color: themeProvider.secondaryTextColor.withOpacity(0.5),
+                                      color: themeProvider.secondaryTextColor.withValues(alpha:0.5),
                                     ),
                                     textAlign: TextAlign.center,
                                   ),
@@ -314,7 +314,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                           Icon(
                                             Icons.coffee_outlined,
                                             size: 64,
-                                            color: themeProvider.accentColor.withOpacity(0.5),
+                                            color: themeProvider.accentColor.withValues(alpha:0.5),
                                           ),
                                           const SizedBox(height: 16),
                                           Text(
@@ -327,7 +327,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                           Text(
                                             'Try refreshing or search terms',
                                             style: theme.textTheme.bodyMedium?.copyWith(
-                                              color: themeProvider.secondaryTextColor.withOpacity(0.7),
+                                              color: themeProvider.secondaryTextColor.withValues(alpha:0.7),
                                             ),
                                             textAlign: TextAlign.center,
                                           ),
@@ -445,8 +445,8 @@ class ModernChip extends StatelessWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    theme.primaryColor.withOpacity(0.8),
-                    theme.primaryColor.withOpacity(0.6),
+                    theme.primaryColor.withValues(alpha:0.8),
+                    theme.primaryColor.withValues(alpha:0.6),
                   ],
                 )
               : null,
@@ -455,7 +455,7 @@ class ModernChip extends StatelessWidget {
           border: Border.all(
             color: selected
                 ? Colors.transparent
-                : theme.primaryColor.withOpacity(0.3),
+                : theme.primaryColor.withValues(alpha:0.3),
             width: 1,
           ),
         ),

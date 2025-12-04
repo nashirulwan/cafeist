@@ -1,10 +1,8 @@
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import '../models/coffee_shop.dart';
-import '../services/personal_tracking_service.dart';
 
 class RecommendationService {
-  static final PersonalTrackingService _trackingService = PersonalTrackingService();
   static final Random _random = Random();
 
   /// Get personalized coffee shop recommendations based on user preferences

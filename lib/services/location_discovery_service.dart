@@ -125,7 +125,8 @@ class LocationDiscoveryService {
         SimplePlacesService.initialize();
       }
 
-      final cafes = await SimplePlacesService.findNearbyCafes(
+      final placesService = SimplePlacesService();
+      final cafes = await placesService.findNearbyCafes(
         latitude,
         longitude,
         radius: radius,
@@ -182,7 +183,8 @@ class LocationDiscoveryService {
         centerLng = locations.first.longitude;
       }
 
-      final cafes = await SimplePlacesService.getPopularCafesInRegion(
+      final placesService = SimplePlacesService();
+      final cafes = await placesService.getPopularCafesInRegion(
         region: region,
         centerLat: centerLat,
         centerLng: centerLng,
@@ -227,7 +229,8 @@ class LocationDiscoveryService {
 
       SimplePlacesService.initialize();
 
-      final cafes = await SimplePlacesService.searchCafesWithFilters(
+      final placesService = SimplePlacesService();
+      final cafes = await placesService.searchCafesWithFilters(
         query: region != null
             ? 'trending popular coffee shops $region'
             : 'trending popular coffee shops',
@@ -283,7 +286,8 @@ class LocationDiscoveryService {
         }
       }
 
-      final cafes = await SimplePlacesService.searchCafesByFeatures(
+      final placesService = SimplePlacesService();
+      final cafes = await placesService.searchCafesByFeatures(
         features: features,
         userLat: userLat,
         userLng: userLng,
@@ -417,7 +421,8 @@ class LocationDiscoveryService {
       SimplePlacesService.initialize();
 
       final searchQuery = query ?? 'coffee cafes';
-      final cafes = await SimplePlacesService.searchCafesWithFilters(
+      final placesService = SimplePlacesService();
+      final cafes = await placesService.searchCafesWithFilters(
         query: searchQuery,
         userLat: userLat,
         userLng: userLng,

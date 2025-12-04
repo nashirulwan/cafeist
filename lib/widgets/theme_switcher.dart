@@ -45,7 +45,7 @@ class ThemeSwitcher extends StatelessWidget {
                                 .textTheme
                                 .bodySmall
                                 ?.color
-                                ?.withOpacity(0.7),
+                                ?.withValues(alpha:0.7),
                           ),
                         ),
                       ],
@@ -183,7 +183,7 @@ class QuickThemeButton extends StatelessWidget {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              color: Theme.of(context).primaryColor.withOpacity(0.1),
+              color: Theme.of(context).primaryColor.withValues(alpha:0.1),
             ),
             child: Icon(
               _getThemeIcon(themeProvider.currentTheme),

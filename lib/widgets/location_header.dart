@@ -35,8 +35,8 @@ class LocationHeader extends StatelessWidget {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      themeProvider.accentColor.withOpacity(0.2),
-                      themeProvider.accentColor.withOpacity(0.1),
+                      themeProvider.accentColor.withValues(alpha:0.2),
+                      themeProvider.accentColor.withValues(alpha:0.1),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(12),
@@ -78,8 +78,8 @@ class LocationHeader extends StatelessWidget {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      themeProvider.accentColor.withOpacity(0.8),
-                      themeProvider.accentColor.withOpacity(0.6),
+                      themeProvider.accentColor.withValues(alpha:0.8),
+                      themeProvider.accentColor.withValues(alpha:0.6),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(12),
@@ -190,8 +190,8 @@ class LocationChip extends StatelessWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    theme.primaryColor.withOpacity(0.8),
-                    theme.primaryColor.withOpacity(0.6),
+                    theme.primaryColor.withValues(alpha:0.8),
+                    theme.primaryColor.withValues(alpha:0.6),
                   ],
                 )
               : null,
@@ -200,7 +200,7 @@ class LocationChip extends StatelessWidget {
           border: Border.all(
             color: selected
                 ? Colors.transparent
-                : theme.primaryColor.withOpacity(0.3),
+                : theme.primaryColor.withValues(alpha:0.3),
             width: 1,
           ),
         ),

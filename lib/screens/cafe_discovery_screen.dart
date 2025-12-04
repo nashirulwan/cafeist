@@ -5,7 +5,6 @@ import '../providers/auth_provider.dart';
 import '../models/coffee_shop.dart';
 import '../widgets/cafe_card.dart';
 import '../widgets/loading_indicator.dart';
-// import '../services/location_discovery_service.dart'; // Temporarily disabled
 
 class CafeDiscoveryScreen extends StatefulWidget {
   const CafeDiscoveryScreen({super.key});
@@ -83,58 +82,58 @@ class _CafeDiscoveryScreenState extends State<CafeDiscoveryScreen>
           ),
         ],
       ),
-    body: Consumer<LocationDiscoveryProvider>(
+      body: Consumer<LocationDiscoveryProvider>(
         builder: (context, discoveryProvider, child) {
-      if (discoveryProvider.isLoading &&
-          discoveryProvider.allDiscoveredCafes.isEmpty) {
-        return const CoffeeLoadingIndicator(
-          message: 'Discovering amazing coffee shops near you...',
-        );
-      }
+          if (discoveryProvider.isLoading &&
+              discoveryProvider.allDiscoveredCafes.isEmpty) {
+            return const CoffeeLoadingIndicator(
+              message: 'Discovering amazing coffee shops near you...',
+            );
+          }
 
-      if (discoveryProvider.error != null) {
-        return _buildErrorWidget(discoveryProvider.error!);
-      }
+          if (discoveryProvider.error != null) {
+            return _buildErrorWidget(discoveryProvider.error!);
+          }
 
-      return Column(
-        children: [
-          // Search bar
-          Container(
-            padding: const EdgeInsets.all(16),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search coffee shops...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () => _searchController.clear(),
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                filled: true,
-                fillColor: Theme.of(context).cardColor,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
+          return Column(
+            children: [
+              // Search bar
+              Container(
+                padding: const EdgeInsets.all(16),
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search coffee shops...',
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () => _searchController.clear(),
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide.none,
+                    ),
+                    filled: true,
+                    fillColor: Theme.of(context).cardColor,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                  ),
+                  onSubmitted: (query) => _searchCafes(query),
                 ),
               ),
-              onSubmitted: (query) => _searchCafes(query),
-            ),
-          ),
 
-          // Sort and filter pills
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            height: 50,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: [
-                // Sort option
-                _buildSortPill(discoveryProvider),
-                const SizedBox(width: 8),
+              // Sort and filter pills
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                height: 50,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    // Sort option
+                    _buildSortPill(discoveryProvider),
+                    const SizedBox(width: 8),
                     // Rating filter
                     if (_minRating != null) _buildFilterPill(
                       '★ $_minRating+',
@@ -170,14 +169,15 @@ class _CafeDiscoveryScreenState extends State<CafeDiscoveryScreen>
                 ),
               ),
             ],
-      );
-    },
-  ),
-  floatingActionButton: FloatingActionButton(
-    onPressed: _showAdvancedSearch,
-    child: const Icon(Icons.search),
-  ),
-  );
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showAdvancedSearch,
+        child: const Icon(Icons.search),
+      ),
+    );
+  }
 
   Widget _buildSortPill(LocationDiscoveryProvider discoveryProvider) {
     return PopupMenuButton<String>(
@@ -185,10 +185,10 @@ class _CafeDiscoveryScreenState extends State<CafeDiscoveryScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: Theme.of(context).primaryColor.withOpacity(0.1),
+          color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: Theme.of(context).primaryColor.withOpacity(0.3),
+            color: Theme.of(context).primaryColor.withValues(alpha: 0.3),
           ),
         ),
         child: Row(
@@ -243,9 +243,9 @@ class _CafeDiscoveryScreenState extends State<CafeDiscoveryScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.orange.withOpacity(0.1),
+        color: Colors.orange.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.orange.withOpacity(0.3)),
+        border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -307,7 +307,7 @@ class _CafeDiscoveryScreenState extends State<CafeDiscoveryScreen>
       return _buildEmptyState(
         'No trending cafes found',
         'Check back later for popular coffee shops in your area.',
-        Icons.trending_off,
+        Icons.trending_down,
         () => discoveryProvider.getTrendingCafes(),
       );
     }
@@ -570,7 +570,6 @@ class _CafeDiscoveryScreenState extends State<CafeDiscoveryScreen>
   }
 
   // Action methods
-
   void _initializeDiscovery() {
     final discoveryProvider = context.read<LocationDiscoveryProvider>();
     discoveryProvider.initialize();
@@ -740,8 +739,6 @@ class _CafeDiscoveryScreenState extends State<CafeDiscoveryScreen>
   }
 
   void _showAdvancedSearch() {
-    final discoveryProvider = context.read<LocationDiscoveryProvider>();
-
     showDialog(
       context: context,
       builder: (context) => AlertDialog(

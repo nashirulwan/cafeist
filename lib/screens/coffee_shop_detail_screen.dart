@@ -140,7 +140,7 @@ class _CoffeeShopDetailScreenState extends State<CoffeeShopDetailScreen>
                   end: Alignment.bottomCenter,
                   colors: [
                     Colors.transparent,
-                    Theme.of(context).scaffoldBackgroundColor.withOpacity(0.7),
+                    Theme.of(context).scaffoldBackgroundColor.withValues(alpha:0.7),
                   ],
                 ),
               ),
@@ -283,9 +283,9 @@ class _CoffeeShopDetailScreenState extends State<CoffeeShopDetailScreen>
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: statusColor.withOpacity(0.1),
+        color: statusColor.withValues(alpha:0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: statusColor.withOpacity(0.3)),
+        border: Border.all(color: statusColor.withValues(alpha:0.3)),
       ),
       child: Row(
         children: [

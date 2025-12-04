@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'dart:math' as math;
-import 'dart:math';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
@@ -243,7 +242,7 @@ class CoffeeShopProvider extends ChangeNotifier {
       _coffeeShops = jsonList.map((json) => CoffeeShop.fromJson(json)).toList();
 
       // Randomize order for variety on each app restart
-      _coffeeShops.shuffle(Random());
+      _coffeeShops.shuffle(math.Random());
 
       // Calculate distances if we have user location
       if (_userLatitude != 0.0 && _userLongitude != 0.0) {
@@ -455,9 +454,6 @@ class CoffeeShopProvider extends ChangeNotifier {
 
   // Get visited coffee shops (async version)
   Future<List<CoffeeShop>> getVisitedCoffeeShops() async {
-    final wishlistIds = await _trackingService.getWishlist();
-    final favoriteIds = await _trackingService.getFavorites();
-
     // Visited shops are those with visit data
     return _coffeeShops.where((shop) {
       return shop.trackingStatus == CafeTrackingStatus.visited;

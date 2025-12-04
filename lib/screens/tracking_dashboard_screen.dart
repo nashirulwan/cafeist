@@ -189,9 +189,9 @@ class _TrackingDashboardScreenState extends State<TrackingDashboardScreen>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha:0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha:0.3)),
       ),
       child: Column(
         children: [
@@ -262,9 +262,9 @@ class _TrackingDashboardScreenState extends State<TrackingDashboardScreen>
       icon: Icon(icon, color: color),
       label: Text(title),
       style: ElevatedButton.styleFrom(
-        backgroundColor: color.withOpacity(0.1),
+        backgroundColor: color.withValues(alpha:0.1),
         foregroundColor: color,
-        side: BorderSide(color: color.withOpacity(0.3)),
+        side: BorderSide(color: color.withValues(alpha:0.3)),
       ),
     );
   }

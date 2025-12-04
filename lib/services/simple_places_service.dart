@@ -6,8 +6,7 @@ import 'package:geolocator/geolocator.dart';
 import '../models/coffee_shop.dart';
 
 class SimplePlacesService {
-  static const String _baseUrl = 'https://maps.googleapis.com/maps/api/place';
-  static String? _apiKey;
+    static String? _apiKey;
   static bool _isInitialized = false;
 
   // Initialize with environment variable

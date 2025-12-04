@@ -48,7 +48,7 @@ class ProfileScreen extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha:0.1),
                 blurRadius: 8,
                 offset: const Offset(0, 4),
               ),
@@ -60,7 +60,7 @@ class ProfileScreen extends StatelessWidget {
                 width: 80,
                 height: 80,
                 decoration: BoxDecoration(
-                  color: themeProvider.accentColor.withOpacity(0.1),
+                  color: themeProvider.accentColor.withValues(alpha:0.1),
                   borderRadius: BorderRadius.circular(40),
                 ),
                 child: Icon(
@@ -121,7 +121,7 @@ class ProfileScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha:0.1),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
@@ -338,7 +338,7 @@ class ProfileScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha:0.1),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
@@ -370,7 +370,7 @@ class ProfileScreen extends StatelessWidget {
                     height: 1,
                     indent: 16,
                     endIndent: 16,
-                    color: themeProvider.secondaryTextColor.withOpacity(0.2),
+                    color: themeProvider.secondaryTextColor.withValues(alpha:0.2),
                   ),
                   ListTile(
                     leading: Icon(

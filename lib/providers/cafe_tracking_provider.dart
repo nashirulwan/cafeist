@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import '../models/coffee_shop.dart';
 import '../services/cafe_tracking_service.dart';
 import '../services/firebase_service.dart';
-import '../providers/auth_provider.dart';
 
 /// Provider for managing personal cafe tracking state
 class CafeTrackingProvider extends ChangeNotifier {
@@ -129,7 +128,7 @@ class CafeTrackingProvider extends ChangeNotifier {
       final updatedCafe = cafe.copyWith(
         trackingStatus: CafeTrackingStatus.visited,
         visitData: visitData,
-        rating: _extractRating(visitData.personalRating) ?? cafe.rating,
+        rating: visitData.personalRating ?? cafe.rating,
       );
       _visitedCafes.insert(0, updatedCafe);
       _updateStatistics();

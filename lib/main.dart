@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'screens/home_screen.dart';
 import 'screens/list_screen.dart';
@@ -14,7 +13,6 @@ import 'services/simple_places_service.dart';
 import 'services/firebase_service.dart';
 import 'services/auth_service.dart';
 import 'services/personal_tracking_service.dart';
-import 'services/error_handler.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -155,13 +153,7 @@ class _MainScreenState extends State<MainScreen> {
     const ProfileScreen(),
   ];
 
-  final List<String> _titles = [
-    'Coffee Finder',
-    'My List',
-    'Favorites',
-    'Profile',
-  ];
-
+  
   @override
   void initState() {
     super.initState();
@@ -181,7 +173,7 @@ class _MainScreenState extends State<MainScreen> {
               color: Theme.of(context).cardColor,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 10,
                   offset: const Offset(0, -2),
                 ),

@@ -53,10 +53,10 @@ class _AuthScreenState extends State<AuthScreen> {
                           width: 100,
                           height: 100,
                           decoration: BoxDecoration(
-                            color: themeProvider.accentColor.withOpacity(0.1),
+                            color: themeProvider.accentColor.withValues(alpha:0.1),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: themeProvider.accentColor.withOpacity(0.3),
+                              color: themeProvider.accentColor.withValues(alpha:0.3),
                               width: 2,
                             ),
                           ),
@@ -223,7 +223,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           children: [
                             Expanded(
                               child: Divider(
-                                color: themeProvider.secondaryTextColor.withOpacity(0.3),
+                                color: themeProvider.secondaryTextColor.withValues(alpha:0.3),
                               ),
                             ),
                             Padding(
@@ -238,7 +238,7 @@ class _AuthScreenState extends State<AuthScreen> {
                             ),
                             Expanded(
                               child: Divider(
-                                color: themeProvider.secondaryTextColor.withOpacity(0.3),
+                                color: themeProvider.secondaryTextColor.withValues(alpha:0.3),
                               ),
                             ),
                           ],
@@ -265,7 +265,7 @@ class _AuthScreenState extends State<AuthScreen> {
                             ),
                             style: OutlinedButton.styleFrom(
                               side: BorderSide(
-                                color: themeProvider.secondaryTextColor.withOpacity(0.3),
+                                color: themeProvider.secondaryTextColor.withValues(alpha:0.3),
                               ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
@@ -302,10 +302,10 @@ class _AuthScreenState extends State<AuthScreen> {
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: Colors.red.withOpacity(0.1),
+                              color: Colors.red.withValues(alpha:0.1),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: Colors.red.withOpacity(0.3),
+                                color: Colors.red.withValues(alpha:0.3),
                               ),
                             ),
                             child: Row(
@@ -376,7 +376,7 @@ class _AuthScreenState extends State<AuthScreen> {
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: themeProvider.secondaryTextColor.withOpacity(0.3),
+                color: themeProvider.secondaryTextColor.withValues(alpha:0.3),
               ),
             ),
             focusedBorder: OutlineInputBorder(
@@ -444,7 +444,7 @@ class _AuthScreenState extends State<AuthScreen> {
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: themeProvider.secondaryTextColor.withOpacity(0.3),
+                color: themeProvider.secondaryTextColor.withValues(alpha:0.3),
               ),
             ),
             focusedBorder: OutlineInputBorder(
