@@ -4,43 +4,41 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:geolocator/geolocator.dart';
 import '../models/coffee_shop.dart';
+import '../utils/logger.dart';
 
-class SimplePlacesService {
-    static String? _apiKey;
-  static bool _isInitialized = false;
+class PlacesService {
+  static String? _apiKey;
+  static const String _baseUrl = 'https://maps.googleapis.com/maps/api/place';
 
   // Initialize with environment variable
   static void initialize() {
     try {
-      final apiKey = dotenv.env['GOOGLE_PLACES_API_KEY'];
+      final apiKey = dotenv.env['GOOGLE_PLACES_API_KEY'] ?? dotenv.env['GOOGLE_MAPS_API_KEY'];
       if (apiKey == null || apiKey.isEmpty) {
-        print('⚠️ GOOGLE_PLACES_API_KEY not found in .env file');
+        AppLogger.warning('GOOGLE_PLACES_API_KEY not found in .env file', tag: 'API');
         _apiKey = null;
-        _isInitialized = false;
         return;
       }
       _apiKey = apiKey;
 
-      // Set initialization flag
-      _isInitialized = true;
-
       if (kDebugMode) {
-        print('✅ Google Places API initialized successfully');
+        AppLogger.success('Google Places API initialized successfully', tag: 'API');
       }
     } catch (e) {
-      print('❌ Failed to initialize Places API: $e');
+      AppLogger.error('Failed to initialize Places API', error: e, tag: 'API');
       _apiKey = null;
-      _isInitialized = false;
     }
   }
 
-  // Check if API is ready
+  // Check if API is ready (static)
   static bool get isInitialized => _apiKey != null && _apiKey!.isNotEmpty;
+
+  // Instance getter for testability/dependency injection
+  bool get isReady => isInitialized;
 
   // Get API key for internal use
   static String? get apiKey {
     if (_apiKey == null || _apiKey!.isEmpty) {
-      print('⚠️ API Key not available, attempting to reload from .env');
       initialize(); // Try to reinitialize
     }
     return _apiKey;
@@ -61,7 +59,7 @@ class SimplePlacesService {
         final data = json.decode(response.body);
 
         if (kDebugMode) {
-          print('Places API Response: ${data['status']} - ${data['error_message'] ?? 'No error message'}');
+          AppLogger.debug('Places API Response: ${data['status']} - ${data['error_message'] ?? 'No error message'}', tag: 'API');
         }
 
         if (data['status'] == 'OK' || data['status'] == 'ZERO_RESULTS') {
@@ -72,13 +70,13 @@ class SimplePlacesService {
         }
       } else {
         if (kDebugMode) {
-          print('HTTP Error ${response.statusCode}: ${response.body}');
+          AppLogger.error('HTTP Error ${response.statusCode}: ${response.body}', tag: 'API');
         }
         throw Exception('HTTP Error ${response.statusCode}');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Failed to search cafes: $e');
+        AppLogger.error('Failed to search cafes', error: e, tag: 'API');
       }
       throw Exception('Failed to search cafes: $e');
     }
@@ -113,11 +111,11 @@ class SimplePlacesService {
         final data = json.decode(response.body);
 
         if (kDebugMode) {
-          print('Nearby Search API Response: ${data['status']} - ${data['error_message'] ?? 'No error message'}');
+          AppLogger.debug('Nearby Search API Response: ${data['status']} - ${data['error_message'] ?? 'No error message'}', tag: 'API');
           if (data['next_page_token'] != null) {
-            print('Has next page: ${data['next_page_token']}');
+            AppLogger.debug('Has next page: ${data['next_page_token']}', tag: 'API');
           }
-          print('Total results: ${data['results']?.length ?? 0}');
+          AppLogger.debug('Total results: ${data['results']?.length ?? 0}', tag: 'API');
         }
 
         if (data['status'] == 'OK' || data['status'] == 'ZERO_RESULTS') {
@@ -135,13 +133,13 @@ class SimplePlacesService {
         }
       } else {
         if (kDebugMode) {
-          print('HTTP Error ${response.statusCode}: ${response.body}');
+          AppLogger.error('HTTP Error ${response.statusCode}: ${response.body}', tag: 'API');
         }
         throw Exception('HTTP Error ${response.statusCode}');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Failed to find nearby cafes: $e');
+        AppLogger.error('Failed to find nearby cafes', error: e, tag: 'API');
       }
       throw Exception('Failed to find nearby cafes: $e');
     }
@@ -215,7 +213,7 @@ class SimplePlacesService {
 
     final apiKey = _apiKey ?? dotenv.env['GOOGLE_PLACES_API_KEY'];
     if (apiKey == null || apiKey.isEmpty) {
-      print('⚠️ Cannot create photo URL - no API key available');
+      AppLogger.warning('Cannot create photo URL - no API key available', tag: 'API');
       return null;
     }
 
@@ -311,7 +309,7 @@ class SimplePlacesService {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Failed to search cafes with filters: $e');
+        AppLogger.error('Failed to search cafes with filters', error: e, tag: 'API');
       }
       throw Exception('Failed to search cafes with filters: $e');
     }
@@ -337,7 +335,7 @@ class SimplePlacesService {
           return _convertToCoffeeShopDetailed(place);
         } else {
           if (kDebugMode) {
-            print('Place Details API Error: ${data['status']} - ${data['error_message'] ?? 'Unknown error'}');
+            AppLogger.error('Place Details API Error: ${data['status']} - ${data['error_message'] ?? 'Unknown error'}', tag: 'API');
           }
           return null;
         }
@@ -346,7 +344,7 @@ class SimplePlacesService {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Failed to get place details: $e');
+        AppLogger.error('Failed to get place details', error: e, tag: 'API');
       }
       throw Exception('Failed to get place details: $e');
     }
@@ -387,12 +385,22 @@ class SimplePlacesService {
 
   /// Convert review data from Google Places
   Review _convertToReview(Map<String, dynamic> review) {
+    // Google returns time in seconds, not milliseconds
+    final timeValue = review['time'] as int?;
+    DateTime reviewDate;
+    if (timeValue != null && timeValue > 0) {
+      reviewDate = DateTime.fromMillisecondsSinceEpoch(timeValue * 1000);
+    } else {
+      // Use relative time from text if available, otherwise null-like date
+      reviewDate = DateTime.now(); // Will be hidden if relative_time_description is used
+    }
+    
     return Review(
       id: review['time']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString(),
       userName: review['author_name'] ?? 'Anonymous',
       rating: review['rating']?.toDouble() ?? 0.0,
       comment: review['text'] ?? '',
-      date: DateTime.fromMillisecondsSinceEpoch(review['time'] ?? 0),
+      date: reviewDate,
       photos: (review['profile_photo_url'] != null) ? [review['profile_photo_url']] : [],
     );
   }
@@ -471,7 +479,7 @@ class SimplePlacesService {
       );
     } catch (e) {
       if (kDebugMode) {
-        print('Failed to get popular cafes in region: $e');
+        AppLogger.error('Failed to get popular cafes in region', error: e, tag: 'API');
       }
       throw Exception('Failed to get popular cafes in region: $e');
     }
@@ -485,10 +493,7 @@ class SimplePlacesService {
     int radius = 10000,
   }) async {
     try {
-      final featureQuery = features.join(' ');
-      final locationQuery = userLat != null && userLng != null
-          ? 'coffee shops with $featureQuery near $userLat,$userLng'
-          : 'coffee shops with $featureQuery';
+
 
       return await findNearbyCafes(
         userLat ?? -6.2088, // Default Jakarta
@@ -497,7 +502,7 @@ class SimplePlacesService {
       );
     } catch (e) {
       if (kDebugMode) {
-        print('Failed to search cafes by features: $e');
+        AppLogger.error('Failed to search cafes by features', error: e, tag: 'API');
       }
       throw Exception('Failed to search cafes by features: $e');
     }

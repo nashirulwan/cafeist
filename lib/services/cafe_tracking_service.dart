@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/coffee_shop.dart';
 import '../services/firebase_service.dart';
-import '../providers/auth_provider.dart';
 
 /// Personal cafe tracking service - MyAnimeList-style functionality
 class CafeTrackingService {

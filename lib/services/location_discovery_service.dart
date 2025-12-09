@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import '../models/coffee_shop.dart';
-import '../services/simple_places_service.dart';
+import '../services/places_service.dart';
 import '../services/cafe_tracking_service.dart';
 
 /// Enhanced location discovery service with regional filtering
@@ -81,7 +81,7 @@ class LocationDiscoveryService {
         print('🔍 Getting cafes near current location');
       }
 
-      SimplePlacesService.initialize();
+      PlacesService.initialize();
 
       final currentLocation = await getCurrentLocation();
       if (currentLocation == null) {
@@ -121,11 +121,11 @@ class LocationDiscoveryService {
         print('🔍 Searching cafes near $latitude, $longitude');
       }
 
-      if (!SimplePlacesService.isInitialized) {
-        SimplePlacesService.initialize();
+      if (!PlacesService.isInitialized) {
+        PlacesService.initialize();
       }
 
-      final placesService = SimplePlacesService();
+      final placesService = PlacesService();
       final cafes = await placesService.findNearbyCafes(
         latitude,
         longitude,
@@ -172,7 +172,7 @@ class LocationDiscoveryService {
         print('🌍 Discovering cafes in region: $region');
       }
 
-      SimplePlacesService.initialize();
+      PlacesService.initialize();
 
       // Try to get coordinates for the region
       List<Location> locations = await locationFromAddress(region);
@@ -183,7 +183,7 @@ class LocationDiscoveryService {
         centerLng = locations.first.longitude;
       }
 
-      final placesService = SimplePlacesService();
+      final placesService = PlacesService();
       final cafes = await placesService.getPopularCafesInRegion(
         region: region,
         centerLat: centerLat,
@@ -227,9 +227,9 @@ class LocationDiscoveryService {
         print('🔥 Getting trending cafes ${region != null ? 'in $region' : 'globally'}');
       }
 
-      SimplePlacesService.initialize();
+      PlacesService.initialize();
 
-      final placesService = SimplePlacesService();
+      final placesService = PlacesService();
       final cafes = await placesService.searchCafesWithFilters(
         query: region != null
             ? 'trending popular coffee shops $region'
@@ -272,7 +272,7 @@ class LocationDiscoveryService {
         print('🎯 Discovering cafes with features: ${features.join(', ')}');
       }
 
-      SimplePlacesService.initialize();
+      PlacesService.initialize();
 
       double? userLat = userLocation?.latitude;
       double? userLng = userLocation?.longitude;
@@ -286,7 +286,7 @@ class LocationDiscoveryService {
         }
       }
 
-      final placesService = SimplePlacesService();
+      final placesService = PlacesService();
       final cafes = await placesService.searchCafesByFeatures(
         features: features,
         userLat: userLat,
@@ -418,10 +418,10 @@ class LocationDiscoveryService {
         print('🔍 Advanced cafe search with filters');
       }
 
-      SimplePlacesService.initialize();
+      PlacesService.initialize();
 
       final searchQuery = query ?? 'coffee cafes';
-      final placesService = SimplePlacesService();
+      final placesService = PlacesService();
       final cafes = await placesService.searchCafesWithFilters(
         query: searchQuery,
         userLat: userLat,

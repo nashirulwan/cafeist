@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import '../models/coffee_shop.dart';
 import '../services/cafe_tracking_service.dart';
 import '../services/firebase_service.dart';
+import '../services/firebase_sync_service.dart';
 
 /// Provider for managing personal cafe tracking state
 class CafeTrackingProvider extends ChangeNotifier {
@@ -92,6 +93,23 @@ class CafeTrackingProvider extends ChangeNotifier {
       _wishlist.insert(0, cafe);
       _updateStatistics();
 
+      // Auto-sync to cloud
+      try {
+        await FirebaseSyncService.syncWishlistItemToCloud(
+          userId: userId,
+          cafeId: cafe.id,
+          action: 'add',
+        );
+        if (kDebugMode) {
+          print('✅ Wishlist synced to cloud for ${cafe.name}');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('⚠️ Failed to sync wishlist to cloud: $e');
+        }
+        // Continue even if sync fails
+      }
+
       if (kDebugMode) {
         print('✅ Added ${cafe.name} to wishlist');
       }
@@ -132,6 +150,23 @@ class CafeTrackingProvider extends ChangeNotifier {
       );
       _visitedCafes.insert(0, updatedCafe);
       _updateStatistics();
+
+      // Auto-sync to cloud
+      try {
+        await FirebaseSyncService.syncVisitToCloud(
+          userId: userId,
+          coffeeShopId: cafe.id,
+          visitData: visitData.toJson(),
+        );
+        if (kDebugMode) {
+          print('✅ Visit data synced to cloud for ${cafe.name}');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print('⚠️ Failed to sync visit to cloud: $e');
+        }
+        // Continue even if sync fails
+      }
 
       if (kDebugMode) {
         print('✅ Marked ${cafe.name} as visited');

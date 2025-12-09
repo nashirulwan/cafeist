@@ -5,10 +5,16 @@ import '../models/coffee_shop.dart';
 
 class AddVisitDialog extends StatefulWidget {
   final CoffeeShop coffeeShop;
+  final int? initialRating;
+  final String? initialNote;
+  final List<DateTime>? initialVisitDates;
 
   const AddVisitDialog({
     super.key,
     required this.coffeeShop,
+    this.initialRating,
+    this.initialNote,
+    this.initialVisitDates,
   });
 
   @override
@@ -22,6 +28,24 @@ class _AddVisitDialogState extends State<AddVisitDialog> {
   final TextEditingController _reviewController = TextEditingController();
   DateTime? _selectedDate;
   List<DateTime> _additionalDates = [];
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize with existing data if provided
+    if (widget.initialRating != null) {
+      _personalRating = widget.initialRating!.toDouble();
+      _selectedOption = 'visited';
+      _showVisitedForm = true;
+    }
+    if (widget.initialNote != null) {
+      _reviewController.text = widget.initialNote!;
+    }
+    if (widget.initialVisitDates != null && widget.initialVisitDates!.isNotEmpty) {
+      _selectedDate = widget.initialVisitDates!.first;
+      _additionalDates = widget.initialVisitDates!.skip(1).toList();
+    }
+  }
 
   @override
   void dispose() {
@@ -427,10 +451,8 @@ class _AddVisitDialogState extends State<AddVisitDialog> {
     // Add additional dates
     visitDates.addAll(_additionalDates);
 
-    // If no visit dates are selected, use today's date as default
-    if (visitDates.isEmpty) {
-      visitDates.add(DateTime.now());
-    }
+    // If no visit dates are selected, that's okay - date is optional
+    // User can add dates later if they want
 
     final Map<String, dynamic> result = {
       'personalRating': _personalRating > 0 ? _personalRating : null,

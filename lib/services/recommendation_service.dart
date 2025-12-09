@@ -173,11 +173,17 @@ class RecommendationService {
 
     // Factor 5: Feature preferences (10% weight)
     if (userPrefs['prefersWiFi'] == true &&
-        cafeDescription.contains('wifi')) score += 5;
+        cafeDescription.contains('wifi')) {
+      score += 5;
+    }
     if (userPrefs['prefersQuiet'] == true &&
-        cafeDescription.contains('quiet')) score += 5;
+        cafeDescription.contains('quiet')) {
+      score += 5;
+    }
     if (userPrefs['prefersSocial'] == true &&
-        cafeDescription.contains('social')) score += 5;
+        cafeDescription.contains('social')) {
+      score += 5;
+    }
 
     // Factor 6: Random variety (10% weight) - to add some randomness
     score += _random.nextDouble() * 10;

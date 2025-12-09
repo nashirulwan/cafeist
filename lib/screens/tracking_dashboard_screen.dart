@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/cafe_tracking_provider.dart';
-import '../providers/auth_provider.dart';
 import '../models/coffee_shop.dart';
-import '../services/cafe_tracking_service.dart';
 import '../widgets/cafe_card.dart';
 import '../widgets/loading_indicator.dart';
 
@@ -316,7 +314,7 @@ class _TrackingDashboardScreenState extends State<TrackingDashboardScreen>
             ...recentCafes.map((cafe) => Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: _buildRecentCafeItem(cafe),
-            )).toList(),
+            )),
           ],
         ),
       ),
@@ -569,7 +567,7 @@ class _TrackingDashboardScreenState extends State<TrackingDashboardScreen>
   }
 }
 
-class CafeSearchDelegate extends SearchDelegate<CoffeeShop> {
+class CafeSearchDelegate extends SearchDelegate<CoffeeShop?> {
   @override
   List<Widget> buildActions(BuildContext context) {
     return [

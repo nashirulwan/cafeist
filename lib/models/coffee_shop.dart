@@ -1,5 +1,5 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import '../services/simple_places_service.dart';
+import '../services/places_service.dart';
 
 class CoffeeShop {
   final String id;
@@ -99,16 +99,29 @@ class CoffeeShop {
         comment: review['text'] ?? review['comment'] ?? '',
         date: review['time'] != null
             ? DateTime.fromMillisecondsSinceEpoch(review['time'])
-            : DateTime.now(),
+            : (review['date'] != null ? DateTime.tryParse(review['date']) ?? DateTime.now() : DateTime.now()),
         photos: review['photos'] != null
             ? List<String>.from(review['photos'])
             : [],
       )).toList();
     }
 
-    // Parse opening hours
+    // Parse opening hours - support both local JSON and Google API format
     OpeningHours openingHours;
-    if (json['opening_hours'] != null) {
+    if (json['openingHours'] != null) {
+      // Local JSON format: openingHours as object with day keys
+      final oh = json['openingHours'] as Map<String, dynamic>;
+      openingHours = OpeningHours(
+        monday: oh['monday'] as String? ?? '07:00 – 22:00',
+        tuesday: oh['tuesday'] as String? ?? '07:00 – 22:00',
+        wednesday: oh['wednesday'] as String? ?? '07:00 – 22:00',
+        thursday: oh['thursday'] as String? ?? '07:00 – 22:00',
+        friday: oh['friday'] as String? ?? '07:00 – 22:00',
+        saturday: oh['saturday'] as String? ?? '08:00 – 23:00',
+        sunday: oh['sunday'] as String? ?? '08:00 – 23:00',
+      );
+    } else if (json['opening_hours'] != null) {
+      // Google API format: opening_hours.weekday_text array
       final weekdayText = json['opening_hours']['weekday_text'] as List? ?? [];
       openingHours = OpeningHours(
         monday: _extractDayHours(weekdayText, 0),
@@ -120,6 +133,7 @@ class CoffeeShop {
         sunday: _extractDayHours(weekdayText, 6),
       );
     } else {
+      // Default hours
       openingHours = OpeningHours(
         monday: '07:00 – 22:00',
         tuesday: '07:00 – 22:00',
@@ -131,24 +145,33 @@ class CoffeeShop {
       );
     }
 
-    // Parse photos
+    // Parse photos - support both direct URLs and Google API photo_reference
     List<String> photos = [];
-    if (json['photos'] != null) {
-      final apiKey = SimplePlacesService.apiKey ?? dotenv.env['GOOGLE_PLACES_API_KEY'];
-      photos = (json['photos'] as List)
-          .where((photo) => photo['photo_reference'] != null)
-          .map((photo) {
-            final photoUrl = 'https://maps.googleapis.com/maps/api/place/photo'
-                '?maxwidth=800'
-                '&maxheight=600'
-                '&photoreference=${photo['photo_reference']}';
-            if (apiKey != null && apiKey.isNotEmpty) {
-              return '$photoUrl&key=$apiKey';
-            }
-            return photoUrl;
-          })
-          .cast<String>()
-          .toList();
+    if (json['photos'] != null && (json['photos'] as List).isNotEmpty) {
+      final photoList = json['photos'] as List;
+      
+      // Check if first item is a String (direct URL) or Map (Google API format)
+      if (photoList.first is String) {
+        // Local JSON format: direct URLs
+        photos = List<String>.from(photoList);
+      } else {
+        // Google API format: photo_reference objects
+        final apiKey = PlacesService.apiKey ?? dotenv.env['GOOGLE_PLACES_API_KEY'];
+        photos = photoList
+            .where((photo) => photo is Map && photo['photo_reference'] != null)
+            .map((photo) {
+              final photoUrl = 'https://maps.googleapis.com/maps/api/place/photo'
+                  '?maxwidth=800'
+                  '&maxheight=600'
+                  '&photoreference=${photo['photo_reference']}';
+              if (apiKey != null && apiKey.isNotEmpty) {
+                return '$photoUrl&key=$apiKey';
+              }
+              return photoUrl;
+            })
+            .cast<String>()
+            .toList();
+      }
     }
 
     // Get location
@@ -176,6 +199,30 @@ class CoffeeShop {
       visitData: null,
       socialMedia: null,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'description': description,
+      'address': address,
+      'phoneNumber': phoneNumber,
+      'website': website,
+      'latitude': latitude,
+      'longitude': longitude,
+      'rating': rating,
+      'reviewCount': reviewCount,
+      'photos': photos,
+      'reviews': reviews.map((review) => review.toJson()).toList(),
+      'opening_hours': openingHours.toJson(),
+      'distance': distance,
+      'isOpen': isOpen,
+      'isFavorite': isFavorite,
+      'trackingStatus': trackingStatus.toString(),
+      'visitData': visitData?.toJson(),
+      'socialMedia': socialMedia,
+    };
   }
 
   static String _getDescription(Map<String, dynamic> json) {
@@ -222,6 +269,17 @@ class Review {
     required this.date,
     required this.photos,
   });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'userName': userName,
+      'rating': rating,
+      'comment': comment,
+      'date': date.toIso8601String(),
+      'photos': photos,
+    };
+  }
 }
 
 class OpeningHours {
@@ -242,6 +300,18 @@ class OpeningHours {
     required this.saturday,
     required this.sunday,
   });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'monday': monday,
+      'tuesday': tuesday,
+      'wednesday': wednesday,
+      'thursday': thursday,
+      'friday': friday,
+      'saturday': saturday,
+      'sunday': sunday,
+    };
+  }
 
   String getTodayHours() {
     final today = DateTime.now().weekday;

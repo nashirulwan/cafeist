@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/coffee_shop_provider.dart';
 import '../providers/theme_provider.dart';
-import '../models/coffee_shop.dart';
 import '../widgets/glass_container.dart';
 import '../widgets/location_header.dart';
 import '../widgets/optimized_coffee_shop_card.dart';
 import 'coffee_shop_detail_screen.dart';
-import '../widgets/theme_switcher.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -397,7 +394,7 @@ class _HomeScreenState extends State<HomeScreen> {
               provider.updateNearbyCoffeeShops();
             },
             child: provider.isLoading
-                ? Container(
+                ? SizedBox(
                     width: 24,
                     height: 24,
                     child: CircularProgressIndicator(

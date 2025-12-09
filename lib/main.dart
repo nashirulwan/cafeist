@@ -9,10 +9,11 @@ import 'screens/auth_screen.dart';
 import 'providers/coffee_shop_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/auth_provider.dart';
-import 'services/simple_places_service.dart';
+import 'services/places_service.dart';
 import 'services/firebase_service.dart';
 import 'services/auth_service.dart';
 import 'services/personal_tracking_service.dart';
+import 'utils/logger.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,58 +21,58 @@ Future<void> main() async {
   // Load environment variables first
   try {
     await dotenv.load(fileName: ".env");
-    print('✅ Environment variables loaded');
+    AppLogger.success('Environment variables loaded', tag: 'Initialization');
 
-    // Debug: Print loaded API keys (masked for security)
+    // Debug: Check loaded API keys (masked for security)
     final placesKey = dotenv.env['GOOGLE_PLACES_API_KEY'];
     final firebaseKey = dotenv.env['FIREBASE_API_KEY'];
 
     if (placesKey != null && placesKey.isNotEmpty) {
-      print('✅ Google Places API key loaded (${placesKey.substring(0, 10)}...)');
+      AppLogger.sensitive('Google Places API key loaded: $placesKey', tag: 'API');
     } else {
-      print('❌ Google Places API key not found or empty');
+      AppLogger.error('Google Places API key not found or empty', tag: 'API');
     }
 
     if (firebaseKey != null && firebaseKey.isNotEmpty) {
-      print('✅ Firebase API key loaded (${firebaseKey.substring(0, 10)}...)');
+      AppLogger.sensitive('Firebase API key loaded: $firebaseKey', tag: 'API');
     } else {
-      print('⚠️ Firebase API key not found or empty');
+      AppLogger.warning('Firebase API key not found or empty', tag: 'API');
     }
   } catch (e) {
-    print('❌ Failed to load .env file: $e');
-    print('⚠️ Make sure .env file exists and is in the correct location');
+    AppLogger.error('Failed to load .env file', error: e, tag: 'Initialization');
+    AppLogger.warning('Make sure .env file exists and is in the correct location', tag: 'Initialization');
   }
 
   // Initialize Firebase second (after env is loaded)
   try {
     await FirebaseService.initialize();
-    print('✅ Firebase initialized');
+    AppLogger.success('Firebase initialized', tag: 'Initialization');
   } catch (e) {
-    print('⚠️ Warning: Firebase initialization failed: $e');
-    print('🔄 Continuing without Firebase...');
+    AppLogger.error('Firebase initialization failed', error: e, tag: 'Initialization');
+    AppLogger.info('Continuing without Firebase...', tag: 'Initialization');
   }
 
   // Initialize Google Sign-In
   try {
     AuthService.initializeGoogleSignIn();
-    print('✅ Google Sign-In initialized');
+    AppLogger.success('Google Sign-In initialized', tag: 'Authentication');
   } catch (e) {
-    print('⚠️ Warning: Google Sign-In initialization failed: $e');
+    AppLogger.error('Google Sign-In initialization failed', error: e, tag: 'Authentication');
   }
 
   // Initialize Places service last (after Firebase)
   try {
-    SimplePlacesService.initialize();
+    PlacesService.initialize();
 
     // Verify initialization
-    if (SimplePlacesService.isInitialized) {
-      print('✅ Places API initialized successfully');
+    if (PlacesService.isInitialized) {
+      AppLogger.success('Places API initialized successfully', tag: 'API');
     } else {
-      print('⚠️ Places API initialization failed - no API key available');
+      AppLogger.warning('Places API initialization failed - no API key available', tag: 'API');
     }
   } catch (e) {
-    print('❌ Places API initialization failed: $e');
-    print('🔄 Using offline data fallback...');
+    AppLogger.error('Places API initialization failed', error: e, tag: 'API');
+    AppLogger.info('Using offline data fallback...', tag: 'API');
   }
 
   // Auto-sync user data on app startup if user is logged in
@@ -83,7 +84,7 @@ Future<void> main() async {
 /// Auto-sync user data from Firebase to local storage on app startup
 Future<void> _autoSyncUserData() async {
   try {
-    print('🔄 Checking for existing user session...');
+    AppLogger.info('Checking for existing user session...', tag: 'Sync');
 
     // Wait a bit for Firebase to fully initialize
     await Future.delayed(Duration(milliseconds: 500));
@@ -91,23 +92,23 @@ Future<void> _autoSyncUserData() async {
     // Check if user is logged in
     if (FirebaseService.isLoggedIn) {
       final userId = FirebaseService.currentUser!.uid;
-      print('✅ User session found: $userId');
+      AppLogger.success('User session found: $userId', tag: 'Sync');
 
       // Sync data from Firebase to local storage
       try {
         final trackingService = PersonalTrackingService();
         await trackingService.syncFromCloudToLocal(userId);
-        print('✅ User data auto-synced from Firebase');
+        AppLogger.success('User data auto-synced from Firebase', tag: 'Sync');
       } catch (e) {
-        print('⚠️ Warning: Auto-sync failed: $e');
-        print('🔄 Continuing with local data...');
+        AppLogger.warning('Auto-sync failed: $e', tag: 'Sync');
+        AppLogger.info('Continuing with local data...', tag: 'Sync');
       }
     } else {
-      print('ℹ️ No existing user session found');
+      AppLogger.info('No existing user session found', tag: 'Sync');
     }
   } catch (e) {
-    print('❌ Auto-sync error: $e');
-    print('🔄 App will continue without auto-sync');
+    AppLogger.error('Auto-sync error', error: e, tag: 'Sync');
+    AppLogger.info('App will continue without auto-sync', tag: 'Sync');
   }
 }
 

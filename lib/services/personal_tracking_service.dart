@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/coffee_shop.dart';
 import 'firebase_sync_service.dart';
+import '../utils/logger.dart';
 
 class PersonalTrackingService {
   static const String _visitKey = 'user_visits';
@@ -33,9 +34,9 @@ class PersonalTrackingService {
         );
       }
 
-      print('✅ Visit data saved locally and synced to cloud');
+      AppLogger.success('Visit data saved locally and synced to cloud', tag: 'Tracking');
     } catch (e) {
-      print('❌ Error saving visit data: $e');
+      AppLogger.error('Error saving visit data', error: e, tag: 'Tracking');
       throw Exception('Failed to save visit data: $e');
     }
   }
@@ -78,10 +79,10 @@ class PersonalTrackingService {
           );
         }
 
-        print('✅ Added to wishlist and synced to cloud: $coffeeShopId');
+        AppLogger.success('Added to wishlist and synced to cloud: $coffeeShopId', tag: 'Tracking');
       }
     } catch (e) {
-      print('❌ Error adding to wishlist: $e');
+      AppLogger.error('Error adding to wishlist', error: e, tag: 'Tracking');
       throw Exception('Failed to add to wishlist: $e');
     }
   }
@@ -97,6 +98,23 @@ class PersonalTrackingService {
       await prefs.setString(_wishlistKey, json.encode(wishlist));
     } catch (e) {
       throw Exception('Failed to remove from wishlist: $e');
+    }
+  }
+
+  /// Remove coffee shop from visited
+  Future<void> removeFromVisited(String coffeeShopId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final visitsJson = prefs.getString(_visitKey) ?? '{}';
+      final Map<String, dynamic> allVisits = json.decode(visitsJson);
+
+      allVisits.remove(coffeeShopId);
+      await prefs.setString(_visitKey, json.encode(allVisits));
+
+      AppLogger.success('Removed from visited: $coffeeShopId', tag: 'Tracking');
+    } catch (e) {
+      AppLogger.error('Error removing from visited', error: e, tag: 'Tracking');
+      throw Exception('Failed to remove from visited: $e');
     }
   }
 
@@ -137,9 +155,9 @@ class PersonalTrackingService {
         );
       }
 
-      print('✅ Favorite status updated and synced to cloud: $coffeeShopId');
+      AppLogger.success('Favorite status updated and synced to cloud: $coffeeShopId', tag: 'Tracking');
     } catch (e) {
-      print('❌ Error toggling favorite: $e');
+      AppLogger.error('Error toggling favorite', error: e, tag: 'Tracking');
       throw Exception('Failed to toggle favorite: $e');
     }
   }
@@ -241,9 +259,9 @@ class PersonalTrackingService {
       final cloudFavorites = List<String>.from(cloudData['favorites']);
       await prefs.setString(_favoritesKey, json.encode(cloudFavorites));
 
-      print('✅ Data synced from cloud to local storage');
+      AppLogger.success('Data synced from cloud to local storage', tag: 'Tracking');
     } catch (e) {
-      print('❌ Error syncing from cloud: $e');
+      AppLogger.error('Error syncing from cloud', error: e, tag: 'Tracking');
       // Don't throw, just continue with local data
     }
   }
@@ -266,9 +284,9 @@ class PersonalTrackingService {
         visits: json.decode(visitsJson),
       );
 
-      print('✅ All local data synced to cloud');
+      AppLogger.success('All local data synced to cloud', tag: 'Tracking');
     } catch (e) {
-      print('❌ Error syncing all data to cloud: $e');
+      AppLogger.error('Error syncing all data to cloud', error: e, tag: 'Tracking');
       throw Exception('Failed to sync data to cloud: $e');
     }
   }
@@ -289,9 +307,9 @@ class PersonalTrackingService {
         await FirebaseSyncService.deleteUserDataFromCloud(userId);
       }
 
-      print('✅ All user data cleared locally and from cloud');
+      AppLogger.success('All user data cleared locally and from cloud', tag: 'Tracking');
     } catch (e) {
-      print('❌ Error clearing data: $e');
+      AppLogger.error('Error clearing data', error: e, tag: 'Tracking');
       throw Exception('Failed to clear data: $e');
     }
   }

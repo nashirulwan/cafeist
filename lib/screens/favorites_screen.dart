@@ -202,7 +202,7 @@ class FavoritesScreen extends StatelessWidget {
                         children: [
                           if (coffeeShop.distance > 0)
                             Text(
-                              '${(coffeeShop.distance / 1000).toStringAsFixed(1)} km',
+                              '${coffeeShop.distance.toStringAsFixed(1)} km',
                               style: GoogleFonts.inter(
                                 fontSize: 12,
                                 color: const Color(0xFF6F4E37),

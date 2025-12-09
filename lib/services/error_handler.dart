@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+
 
 /// Global Error Handler untuk aplikasi Cafeist
 class AppErrorHandler {
@@ -127,50 +127,45 @@ class AppException implements Exception {
 
 /// Network related exceptions
 class NetworkException extends AppException {
-  const NetworkException({String? message, String? context})
+  const NetworkException({String? message, super.context})
       : super(
           message: message ?? 'Network connection error',
           code: 'NETWORK_ERROR',
-          context: context,
         );
 }
 
 /// API related exceptions
 class ApiException extends AppException {
-  const ApiException({String? message, String? context})
+  const ApiException({String? message, super.context})
       : super(
           message: message ?? 'API request failed',
           code: 'API_ERROR',
-          context: context,
         );
 }
 
 /// Location related exceptions
 class LocationException extends AppException {
-  const LocationException({String? message, String? context})
+  const LocationException({String? message, super.context})
       : super(
           message: message ?? 'Location access error',
           code: 'LOCATION_ERROR',
-          context: context,
         );
 }
 
 /// Authentication related exceptions
 class AuthException extends AppException {
-  const AuthException({String? message, String? context})
+  const AuthException({String? message, super.context})
       : super(
           message: message ?? 'Authentication error',
           code: 'AUTH_ERROR',
-          context: context,
         );
 }
 
 /// Data parsing related exceptions
 class DataException extends AppException {
-  const DataException({String? message, String? context})
+  const DataException({String? message, super.context})
       : super(
           message: message ?? 'Data parsing error',
           code: 'DATA_ERROR',
-          context: context,
         );
 }

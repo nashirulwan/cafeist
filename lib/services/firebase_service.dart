@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../utils/logger.dart';
 
 class FirebaseService {
   static bool _initialized = false;
@@ -29,18 +30,18 @@ class FirebaseService {
 
       // Set Firestore settings for better performance
       if (kDebugMode) {
-        print('✅ Firebase initialized successfully');
-        print('📱 App ready for authentication and database');
+        AppLogger.info('Firebase initialized successfully', tag: 'Firebase');
+        AppLogger.debug('App ready for authentication and database', tag: 'Firebase');
       }
 
       _initialized = true;
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Firebase initialization failed: $e');
-        print('⚠️ Continuing without Firebase functionality');
+        AppLogger.error('Firebase initialization failed', error: e, tag: 'Firebase');
+        AppLogger.warning('Continuing without Firebase functionality', tag: 'Firebase');
       }
       // Don't throw error - continue without Firebase
-      print('⚠️ Using Firebase with basic configuration for development...');
+      AppLogger.warning('Using Firebase with basic configuration for development...', tag: 'Firebase');
     }
   }
 
@@ -67,11 +68,11 @@ class FirebaseService {
     try {
       await _auth.signOut();
       if (kDebugMode) {
-        print('✅ User signed out successfully');
+        AppLogger.info('User signed out successfully', tag: 'Auth');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Sign out failed: $e');
+        AppLogger.error('Sign out failed', error: e, tag: 'Auth');
       }
       throw Exception('Sign out failed: $e');
     }
@@ -84,12 +85,12 @@ class FirebaseService {
       if (user != null) {
         await user.delete();
         if (kDebugMode) {
-          print('✅ User account deleted successfully');
+          AppLogger.info('User account deleted successfully', tag: 'Auth');
         }
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Account deletion failed: $e');
+        AppLogger.error('Account deletion failed', error: e, tag: 'Auth');
       }
       throw Exception('Account deletion failed: $e');
     }

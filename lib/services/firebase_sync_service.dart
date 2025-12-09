@@ -1,8 +1,8 @@
-import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/coffee_shop.dart';
 import '../models/user_profile.dart';
+import '../utils/logger.dart';
 
 class FirebaseSyncService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -26,9 +26,9 @@ class FirebaseSyncService {
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
-      print('✅ User data synced to cloud successfully');
+      AppLogger.success('User data synced to cloud successfully', tag: 'Firebase');
     } catch (e) {
-      print('❌ Error syncing user data to cloud: $e');
+      AppLogger.error('Error syncing user data to cloud', error: e, tag: 'Firebase');
       rethrow;
     }
   }
@@ -41,7 +41,7 @@ class FirebaseSyncService {
 
       if (docSnapshot.exists) {
         final data = docSnapshot.data()!;
-        print('✅ User data loaded from cloud successfully');
+        AppLogger.success('User data loaded from cloud successfully', tag: 'Firebase');
         return {
           'wishlist': List<String>.from(data['wishlist'] ?? []),
           'favorites': List<String>.from(data['favorites'] ?? []),
@@ -50,7 +50,7 @@ class FirebaseSyncService {
           'updatedAt': data['updatedAt'],
         };
       } else {
-        print('ℹ️ No user data found in cloud, using empty data');
+        AppLogger.info('No user data found in cloud, using empty data', tag: 'Firebase');
         return {
           'wishlist': <String>[],
           'favorites': <String>[],
@@ -60,7 +60,7 @@ class FirebaseSyncService {
         };
       }
     } catch (e) {
-      print('❌ Error getting user data from cloud: $e');
+      AppLogger.error('Error getting user data from cloud', error: e, tag: 'Firebase');
       rethrow;
     }
   }
@@ -80,9 +80,9 @@ class FirebaseSyncService {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      print('✅ Visit data synced to cloud: $coffeeShopId');
+      AppLogger.success('Visit data synced to cloud: $coffeeShopId', tag: 'Firebase');
     } catch (e) {
-      print('❌ Error syncing visit to cloud: $e');
+      AppLogger.error('Error syncing visit to cloud', error: e, tag: 'Firebase');
       rethrow;
     }
   }
@@ -100,9 +100,40 @@ class FirebaseSyncService {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      print('✅ Wishlist synced to cloud: ${wishlist.length} items');
+      AppLogger.success('Wishlist synced to cloud: ${wishlist.length} items', tag: 'Firebase');
     } catch (e) {
-      print('❌ Error syncing wishlist to cloud: $e');
+      AppLogger.error('Error syncing wishlist to cloud', error: e, tag: 'Firebase');
+      rethrow;
+    }
+  }
+
+  /// Add/remove single item from wishlist
+  static Future<void> syncWishlistItemToCloud({
+    required String userId,
+    required String cafeId,
+    required String action, // 'add' or 'remove'
+    CoffeeShop? coffeeShop,
+  }) async {
+    try {
+      final userRef = _firestore.collection('users').doc(userId);
+
+      if (action == 'add') {
+        // Add to wishlist array
+        await userRef.update({
+          'wishlist': FieldValue.arrayUnion([cafeId]),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+        AppLogger.success('Added to wishlist: $cafeId', tag: 'Firebase');
+      } else if (action == 'remove') {
+        // Remove from wishlist array
+        await userRef.update({
+          'wishlist': FieldValue.arrayRemove([cafeId]),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+        AppLogger.success('Removed from wishlist: $cafeId', tag: 'Firebase');
+      }
+    } catch (e) {
+      AppLogger.error('Error syncing wishlist item to cloud', error: e, tag: 'Firebase');
       rethrow;
     }
   }
@@ -120,9 +151,9 @@ class FirebaseSyncService {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      print('✅ Favorites synced to cloud: ${favorites.length} items');
+      AppLogger.success('Favorites synced to cloud: ${favorites.length} items', tag: 'Firebase');
     } catch (e) {
-      print('❌ Error syncing favorites to cloud: $e');
+      AppLogger.error('Error syncing favorites to cloud', error: e, tag: 'Firebase');
       rethrow;
     }
   }
@@ -134,9 +165,9 @@ class FirebaseSyncService {
 
       await userRef.delete();
 
-      print('✅ User data deleted from cloud successfully');
+      AppLogger.success('User data deleted from cloud successfully', tag: 'Firebase');
     } catch (e) {
-      print('❌ Error deleting user data from cloud: $e');
+      AppLogger.error('Error deleting user data from cloud', error: e, tag: 'Firebase');
       rethrow;
     }
   }
@@ -179,12 +210,12 @@ class FirebaseSyncService {
           },
         });
 
-        print('✅ User profile created in Firestore');
+        AppLogger.success('User profile created in Firestore', tag: 'Firebase');
       } else {
-        print('ℹ️ User profile already exists in Firestore');
+        AppLogger.info('User profile already exists in Firestore', tag: 'Firebase');
       }
     } catch (e) {
-      print('❌ Error creating user profile: $e');
+      AppLogger.error('Error creating user profile', error: e, tag: 'Firebase');
       rethrow;
     }
   }
@@ -206,9 +237,37 @@ class FirebaseSyncService {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      print('✅ User stats updated in cloud');
+      AppLogger.success('User stats updated in cloud', tag: 'Firebase');
     } catch (e) {
-      print('❌ Error updating user stats: $e');
+      AppLogger.error('Error updating user stats', error: e, tag: 'Firebase');
+      rethrow;
+    }
+  }
+
+  /// Sync user profile to Firestore
+  static Future<void> syncUserProfile(UserProfile userProfile) async {
+    try {
+      final userDoc = _firestore.collection('users').doc(userProfile.uid);
+
+      final profileData = {
+        'displayName': userProfile.displayName,
+        'email': userProfile.email,
+        'photoURL': userProfile.photoURL,
+        'authProvider': userProfile.authProvider,
+        'lastLoginAt': userProfile.lastLoginAt.toIso8601String(),
+        'updatedAt': FieldValue.serverTimestamp(),
+        if (userProfile.bio != null) 'bio': userProfile.bio,
+        if (userProfile.location != null) 'location': userProfile.location,
+        if (userProfile.preferences != null) 'preferences': userProfile.preferences,
+        'notificationsEnabled': userProfile.notificationsEnabled,
+        if (userProfile.defaultRegion != null) 'defaultRegion': userProfile.defaultRegion,
+      };
+
+      await userDoc.set(profileData, SetOptions(merge: true));
+
+      AppLogger.success('User profile synced to cloud: ${userProfile.displayName}', tag: 'Firebase');
+    } catch (e) {
+      AppLogger.error('Error syncing user profile', error: e, tag: 'Firebase');
       rethrow;
     }
   }

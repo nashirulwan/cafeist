@@ -4,13 +4,11 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/coffee_shop_provider.dart';
 import '../providers/theme_provider.dart';
-import '../providers/location_discovery_provider.dart';
-import '../models/coffee_shop.dart';
+
 import '../widgets/glass_container.dart';
 import '../widgets/location_header.dart';
 import '../widgets/optimized_coffee_shop_card.dart';
 import 'coffee_shop_detail_screen.dart';
-import '../widgets/theme_switcher.dart';
 
 // Simple Chip Widget
 class SimpleChip extends StatelessWidget {
@@ -56,24 +54,32 @@ class SimpleChip extends StatelessWidget {
             width: 1,
           ),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              color: selected ? Colors.white : theme.primaryColor,
-              size: 18,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                color: selected ? Colors.white : theme.primaryColor,
-              ),
-            ),
-          ],
+        child: Consumer<ThemeProvider>(
+          builder: (context, themeProvider, child) {
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  icon,
+                  color: selected
+                    ? Colors.white
+                    : themeProvider.primaryTextColor.withValues(alpha: 0.8),
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                    color: selected
+                      ? Colors.white
+                      : themeProvider.primaryTextColor.withValues(alpha: 0.8),
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -299,13 +305,19 @@ class ModernChip extends StatelessWidget {
             width: 1,
           ),
         ),
-        child: Text(
-          label,
-          style: GoogleFonts.inter(
-            fontSize: 14,
-            fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-            color: selected ? Colors.white : theme.primaryColor,
-          ),
+        child: Consumer<ThemeProvider>(
+          builder: (context, themeProvider, child) {
+            return Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                color: selected
+                  ? Colors.white
+                  : themeProvider.primaryTextColor.withValues(alpha: 0.8),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -488,13 +500,10 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    // Only initialize coffee shops if it's the first time loading
+    // Only initialize if data is empty (first load) - prevents re-init on navigation
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<CoffeeShopProvider>();
-      // Only update if we don't have any data yet or location has changed significantly
-      if (provider.nearbyCoffeeShops.isEmpty) {
-        provider.updateNearbyCoffeeShops();
-      }
+      provider.initializeIfNeeded();
     });
   }
 
@@ -638,26 +647,18 @@ class _HomeScreenState extends State<HomeScreen> {
                             label: 'All',
                             icon: Icons.coffee,
                             selected: provider.activeFilter == 'all',
-                            onTap: () {
-                              provider.setActiveFilter('all');
+                            onTap: () async {
+                              await provider.setActiveFilter('all');
                             },
                           ),
-                          const SizedBox(width: 8),
-                          ModernChip(
-                            label: 'Nearby',
-                            icon: Icons.near_me,
-                            selected: provider.activeFilter == 'nearby',
-                            onTap: () {
-                              provider.setActiveFilter('nearby');
-                            },
-                          ),
+
                           const SizedBox(width: 8),
                           ModernChip(
                             label: 'Top Rated',
                             icon: Icons.star,
                             selected: provider.activeFilter == 'topRated',
-                            onTap: () {
-                              provider.setActiveFilter('topRated');
+                            onTap: () async {
+                              await provider.setActiveFilter('topRated');
                             },
                           ),
                           const SizedBox(width: 8),
@@ -665,20 +666,11 @@ class _HomeScreenState extends State<HomeScreen> {
                             label: 'Top Review',
                             icon: Icons.reviews,
                             selected: provider.activeFilter == 'topReview',
-                            onTap: () {
-                              provider.setActiveFilter('topReview');
-                            },
-                          ),
-                          const SizedBox(width: 8),
-                          ModernChip(
-                            label: 'For You',
-                            icon: Icons.thumb_up,
-                            selected: provider.activeFilter == 'recommended',
                             onTap: () async {
-                              await provider.applyRecommendationFilter();
+                              await provider.setActiveFilter('topReview');
                             },
                           ),
-                        ],
+                                                  ],
                       ),
                     );
                   },
@@ -766,7 +758,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       );
                     }
 
-                    // Main Content
+                    // Main Content - display up to 20 cafes, refresh to get new ones
                     return SingleChildScrollView(
                       child: Column(
                         children: [
@@ -818,14 +810,15 @@ class _HomeScreenState extends State<HomeScreen> {
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
                               padding: const EdgeInsets.only(bottom: 100),
-                              itemCount: provider.nearbyCoffeeShops.length,
+                              itemCount: provider.getVisibleCoffeeShops().length,
                               // Performance optimization: set item extent for smooth scrolling
                               itemExtent: 120.0,
                               // Performance optimization: cache extent for better performance
                               cacheExtent: 500.0,
                               itemBuilder: (context, index) {
+
                                 final coffeeShop =
-                                    provider.nearbyCoffeeShops[index];
+                                    provider.getVisibleCoffeeShops()[index];
                                 return OptimizedCoffeeShopCard(
                                   coffeeShop: coffeeShop,
                                   onTap: () {
@@ -870,13 +863,14 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       floatingActionButton: Consumer<CoffeeShopProvider>(
         builder: (context, provider, child) {
+          // Show refresh button for all filters
           return FloatingActionButton(
-            onPressed: () {
-              // Refresh cafe data
-              provider.updateNearbyCoffeeShops();
+            onPressed: () async {
+              // Random refresh cafe data
+              provider.refreshCoffeeShops();
             },
             child: provider.isLoading
-                ? Container(
+                ? SizedBox(
                     width: 24,
                     height: 24,
                     child: CircularProgressIndicator(
@@ -893,201 +887,5 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _showLocationSelector(BuildContext context) {
-    final List<Map<String, dynamic>> jakartaDistricts = [
-      {'name': 'Jakarta Pusat', 'lat': -6.1944, 'lng': 106.8229},
-      {'name': 'Jakarta Utara', 'lat': -6.1384, 'lng': 106.8759},
-      {'name': 'Jakarta Barat', 'lat': -6.1755, 'lng': 106.7952},
-      {'name': 'Jakarta Selatan', 'lat': -6.2615, 'lng': 106.8106},
-      {'name': 'Jakarta Timur', 'lat': -6.2485, 'lng': 106.8755},
-    ];
 
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => GlassContainer(
-        margin: const EdgeInsets.all(16),
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Select District',
-              style: GoogleFonts.inter(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Choose a district to find coffee shops nearby',
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                color: Colors.grey,
-              ),
-            ),
-            const SizedBox(height: 20),
-            ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.6,
-              ),
-              child: ListView.builder(
-                shrinkWrap: true,
-                itemCount: jakartaDistricts.length,
-                itemBuilder: (context, index) {
-                  final district = jakartaDistricts[index];
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () async {
-                          Navigator.pop(context);
-
-                          // Update location provider with selected district
-                          final locationProvider =
-                              Provider.of<LocationDiscoveryProvider>(
-                            context,
-                            listen: false,
-                          );
-
-                          await locationProvider.updateLocation(
-                            district['lat'],
-                            district['lng'],
-                          );
-
-                          // Refresh coffee shops with new location
-                          final coffeeProvider =
-                              Provider.of<CoffeeShopProvider>(
-                            context,
-                            listen: false,
-                          );
-
-                          await coffeeProvider.refreshCoffeeShops();
-
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                  'Location updated to ${district['name']}'),
-                              backgroundColor: Colors.green,
-                              duration: const Duration(seconds: 2),
-                            ),
-                          );
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: Colors.grey.withValues(alpha: 0.3),
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context)
-                                      .primaryColor
-                                      .withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Icon(
-                                  Icons.location_on,
-                                  color: Theme.of(context).primaryColor,
-                                  size: 20,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      district['name'],
-                                      style: GoogleFonts.inter(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    Text(
-                                      'Tap to search coffee shops here',
-                                      style: GoogleFonts.inter(
-                                        fontSize: 12,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Icon(
-                                Icons.arrow_forward_ios,
-                                size: 16,
-                                color: Colors.grey[600],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () async {
-                      Navigator.pop(context);
-
-                      // Use current GPS location
-                      final locationProvider =
-                          Provider.of<LocationDiscoveryProvider>(
-                        context,
-                        listen: false,
-                      );
-
-                      try {
-                        await locationProvider.refreshLocation();
-
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Using your current location'),
-                            backgroundColor: Colors.green,
-                            duration: Duration(seconds: 2),
-                          ),
-                        );
-                      } catch (e) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Failed to get location: $e'),
-                            backgroundColor: Colors.red,
-                            duration: const Duration(seconds: 3),
-                          ),
-                        );
-                      }
-                    },
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.gps_fixed,
-                          size: 18,
-                        ),
-                        const SizedBox(width: 8),
-                        Text('Use GPS Location'),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

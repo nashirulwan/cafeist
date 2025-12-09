@@ -3,10 +3,13 @@ import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/services.dart';
 import '../models/coffee_shop.dart';
 import '../providers/coffee_shop_provider.dart';
 import '../providers/theme_provider.dart';
 import '../widgets/add_visit_dialog.dart';
+import '../utils/google_maps_helper.dart';
+import '../services/places_service.dart';
 
 class CoffeeShopDetailScreen extends StatefulWidget {
   final CoffeeShop coffeeShop;
@@ -20,11 +23,44 @@ class CoffeeShopDetailScreen extends StatefulWidget {
 class _CoffeeShopDetailScreenState extends State<CoffeeShopDetailScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  CoffeeShop? _detailedCoffeeShop;
+  bool _isLoadingDetails = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _loadFullDetails();
+  }
+
+  Future<void> _loadFullDetails() async {
+    if (!mounted) return;
+    
+    setState(() => _isLoadingDetails = true);
+    
+    try {
+      final placesService = PlacesService();
+      if (placesService.isReady) {
+        final details = await placesService.getPlaceDetails(widget.coffeeShop.id);
+        if (mounted && details != null) {
+          setState(() {
+            _detailedCoffeeShop = details.copyWith(
+              isFavorite: widget.coffeeShop.isFavorite,
+              trackingStatus: widget.coffeeShop.trackingStatus,
+              visitData: widget.coffeeShop.visitData,
+              distance: widget.coffeeShop.distance,
+            );
+          });
+        }
+      }
+    } catch (e) {
+      // Fallback to basic info if API fails
+      debugPrint('Failed to load place details: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingDetails = false);
+      }
+    }
   }
 
   @override
@@ -38,57 +74,79 @@ class _CoffeeShopDetailScreenState extends State<CoffeeShopDetailScreen>
     return Scaffold(
       body: Consumer2<CoffeeShopProvider, ThemeProvider>(
         builder: (context, provider, themeProvider, child) {
-          final coffeeShop = provider.getCoffeeShopById(widget.coffeeShop.id) ?? widget.coffeeShop;
-
-          return CustomScrollView(
-            slivers: [
-              _buildSliverAppBar(coffeeShop),
-              SliverToBoxAdapter(child: _buildHeaderSection(coffeeShop)),
-              SliverToBoxAdapter(child: _buildTrackingStatus(coffeeShop)),
-              SliverToBoxAdapter(child: _buildActionButtons(coffeeShop)),
-              SliverToBoxAdapter(child: _buildTabBar()),
-              SliverFillRemaining(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildOverviewTab(coffeeShop),
-                    _buildReviewsTab(coffeeShop),
-                    _buildPhotosTab(coffeeShop),
-                  ],
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-      floatingActionButton: Consumer2<CoffeeShopProvider, ThemeProvider>(
-        builder: (context, provider, themeProvider, child) {
-          final coffeeShop = provider.getCoffeeShopById(widget.coffeeShop.id) ?? widget.coffeeShop;
-
-          if (coffeeShop.trackingStatus == CafeTrackingStatus.notTracked) {
-            return FloatingActionButton.extended(
-              onPressed: () => _showAddToTrackingDialog(context, coffeeShop),
-              icon: const Icon(Icons.add),
-              label: const Text('Add to List'),
-              backgroundColor: themeProvider.accentColor,
+          // Get the latest state from provider
+          final baseCoffeeShop = provider.getCoffeeShopById(widget.coffeeShop.id) ?? widget.coffeeShop;
+          
+          // Use detailed data if available, but always sync isFavorite and trackingStatus from provider
+          CoffeeShop coffeeShop;
+          final isFavorite = provider.isFavorite(widget.coffeeShop.id);
+          
+          if (_detailedCoffeeShop != null) {
+            coffeeShop = _detailedCoffeeShop!.copyWith(
+              isFavorite: isFavorite,
+              trackingStatus: baseCoffeeShop.trackingStatus,
+              visitData: baseCoffeeShop.visitData,
             );
-          } else if (coffeeShop.trackingStatus == CafeTrackingStatus.wantToVisit) {
-            return FloatingActionButton.extended(
-              onPressed: () => _markAsVisited(context, coffeeShop),
-              icon: const Icon(Icons.check_circle),
-              label: const Text('Mark Visited'),
-              backgroundColor: Colors.green,
-            );
-          } else if (coffeeShop.trackingStatus == CafeTrackingStatus.visited) {
-            return FloatingActionButton.extended(
-              onPressed: () => _addRevisit(context, coffeeShop),
-              icon: const Icon(Icons.replay),
-              label: const Text('Revisit'),
-              backgroundColor: Colors.blue,
+          } else {
+            coffeeShop = baseCoffeeShop.copyWith(
+              isFavorite: isFavorite,
             );
           }
 
-          return const SizedBox.shrink();
+          return Scaffold(
+            body: NestedScrollView(
+              headerSliverBuilder: (context, innerBoxIsScrolled) {
+                return [
+                  _buildSliverAppBar(coffeeShop),
+                  SliverToBoxAdapter(child: _buildHeaderSection(coffeeShop)),
+                  SliverToBoxAdapter(child: _buildTrackingStatus(coffeeShop)),
+                  SliverToBoxAdapter(child: _buildActionButtons(coffeeShop)),
+                  SliverPersistentHeader(
+                    delegate: _SliverAppBarDelegate(_buildTabBar(themeProvider)),
+                    pinned: true,
+                  ),
+                ];
+              },
+              body: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildOverviewTab(coffeeShop),
+                  _buildReviewsTab(coffeeShop),
+                  _buildPhotosTab(coffeeShop),
+                ],
+              ),
+            ),
+            floatingActionButton: Consumer2<CoffeeShopProvider, ThemeProvider>(
+              builder: (context, provider, themeProvider, child) {
+                // Determine if we should show floating action button
+                final trackingStatus = coffeeShop.trackingStatus;
+                
+                if (trackingStatus == CafeTrackingStatus.notTracked) {
+                  return FloatingActionButton.extended(
+                    onPressed: () => _showAddToTrackingDialog(context, coffeeShop),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Add to List'),
+                    backgroundColor: themeProvider.accentColor,
+                  );
+                } else if (trackingStatus == CafeTrackingStatus.wantToVisit) {
+                  return FloatingActionButton.extended(
+                    onPressed: () => _markAsVisited(context, coffeeShop),
+                    icon: const Icon(Icons.check_circle),
+                    label: const Text('Mark Visited'),
+                    backgroundColor: Colors.green,
+                  );
+                } else if (trackingStatus == CafeTrackingStatus.visited) {
+                  return FloatingActionButton.extended(
+                    onPressed: () => _addRevisit(context, coffeeShop),
+                    icon: const Icon(Icons.replay),
+                    label: const Text('Revisit'),
+                    backgroundColor: Colors.blue,
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+          );
         },
       ),
     );
@@ -106,12 +164,6 @@ class _CoffeeShopDetailScreenState extends State<CoffeeShopDetailScreen>
           ),
           onPressed: () {
             context.read<CoffeeShopProvider>().toggleFavorite(coffeeShop.id);
-          },
-        ),
-        IconButton(
-          icon: const Icon(Icons.share),
-          onPressed: () {
-            // Share functionality
           },
         ),
       ],
@@ -273,7 +325,6 @@ class _CoffeeShopDetailScreenState extends State<CoffeeShopDetailScreen>
         statusIcon = Icons.check_circle;
         break;
       case CafeTrackingStatus.notTracked:
-      default:
         statusColor = Colors.grey;
         statusText = 'Not Tracked';
         statusIcon = Icons.help_outline;
@@ -372,63 +423,117 @@ class _CoffeeShopDetailScreenState extends State<CoffeeShopDetailScreen>
   Widget _buildActionButtons(CoffeeShop coffeeShop) {
     return Container(
       padding: const EdgeInsets.all(16),
-      child: Row(
+      child: Column(
         children: [
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: () {
-                _launchMaps(coffeeShop);
-              },
-              icon: const Icon(Icons.directions),
-              label: Text(
-                'Directions',
-                style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    _openDirections(coffeeShop);
+                  },
+                  icon: const Icon(Icons.directions),
+                  label: Text(
+                    'Directions',
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    _shareLocation(coffeeShop);
+                  },
+                  icon: const Icon(Icons.share),
+                  label: Text(
+                    'Share',
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Colors.green),
+                    foregroundColor: Colors.green,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: OutlinedButton.icon(
-              onPressed: () {
-                _makeReservation(coffeeShop.phoneNumber);
-              },
-              icon: const Icon(Icons.calendar_today),
-              label: Text(
-                'Reservation',
-                style: GoogleFonts.inter(fontWeight: FontWeight.w600),
-              ),
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Colors.green),
-                foregroundColor: Colors.green,
-              ),
+
+          // Contact buttons
+          if (coffeeShop.phoneNumber.isNotEmpty || coffeeShop.website.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                if (coffeeShop.phoneNumber.isNotEmpty) ...[
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        _callPhone(coffeeShop.phoneNumber);
+                      },
+                      icon: const Icon(Icons.phone),
+                      label: Text(
+                        'Call',
+                        style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Colors.orange),
+                        foregroundColor: Colors.orange,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                ],
+                if (coffeeShop.website.isNotEmpty) ...[
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        _openWebsite(coffeeShop.website);
+                      },
+                      icon: const Icon(Icons.language),
+                      label: Text(
+                        'Website',
+                        style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Colors.purple),
+                        foregroundColor: Colors.purple,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
-          ),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildTabBar() {
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, child) {
-        return TabBar(
-          controller: _tabController,
-          labelColor: themeProvider.accentColor,
-          unselectedLabelColor: themeProvider.secondaryTextColor,
-          indicatorColor: themeProvider.accentColor,
-          tabs: const [
-            Tab(text: 'Overview'),
-            Tab(text: 'Reviews'),
-            Tab(text: 'Photos'),
-          ],
-        );
-      },
+  TabBar _buildTabBar(ThemeProvider themeProvider) {
+    return TabBar(
+      controller: _tabController,
+      labelColor: themeProvider.accentColor,
+      unselectedLabelColor: themeProvider.secondaryTextColor,
+      indicatorColor: themeProvider.accentColor,
+      tabs: const [
+        Tab(text: 'Overview'),
+        Tab(text: 'Reviews'),
+        Tab(text: 'Photos'),
+      ],
     );
   }
 
   Widget _buildOverviewTab(CoffeeShop coffeeShop) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -467,7 +572,7 @@ class _CoffeeShopDetailScreenState extends State<CoffeeShopDetailScreen>
 
   Widget _buildReviewsTab(CoffeeShop coffeeShop) {
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
       itemCount: coffeeShop.reviews.length,
       itemBuilder: (context, index) {
         final review = coffeeShop.reviews[index];
@@ -552,7 +657,7 @@ class _CoffeeShopDetailScreenState extends State<CoffeeShopDetailScreen>
 
   Widget _buildPhotosTab(CoffeeShop coffeeShop) {
     return GridView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         crossAxisSpacing: 8,
@@ -679,16 +784,78 @@ class _CoffeeShopDetailScreenState extends State<CoffeeShopDetailScreen>
       ),
       child: Column(
         children: [
+          // Address
           ListTile(
-            leading: Consumer<ThemeProvider>(builder: (context, themeProvider, child) => Icon(Icons.calendar_today, color: themeProvider.accentColor)),
-            title: Text('Make Reservation'),
-            onTap: () => _makeReservation(coffeeShop.phoneNumber),
+            leading: Consumer<ThemeProvider>(builder: (context, themeProvider, child) => Icon(Icons.location_on, color: themeProvider.accentColor)),
+            title: Text('Address'),
+            subtitle: Text(
+              coffeeShop.address,
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: Colors.grey[600],
+              ),
+            ),
+            onTap: () => _openDirections(coffeeShop),
           ),
           const Divider(height: 1),
+
+          // Phone
+          if (coffeeShop.phoneNumber.isNotEmpty) ...[
+            ListTile(
+              leading: Consumer<ThemeProvider>(builder: (context, themeProvider, child) => Icon(Icons.phone, color: themeProvider.accentColor)),
+              title: Text('Phone'),
+              subtitle: Text(
+                coffeeShop.phoneNumber,
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                ),
+              ),
+              onTap: () => _callPhone(coffeeShop.phoneNumber),
+            ),
+            const Divider(height: 1),
+          ],
+
+          // Website
+          if (coffeeShop.website.isNotEmpty) ...[
+            ListTile(
+              leading: Consumer<ThemeProvider>(builder: (context, themeProvider, child) => Icon(Icons.language, color: themeProvider.accentColor)),
+              title: Text('Website'),
+              subtitle: Text(
+                coffeeShop.website,
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+              onTap: () => _openWebsite(coffeeShop.website),
+            ),
+            const Divider(height: 1),
+          ],
+
+          // Status
           ListTile(
-            leading: Consumer<ThemeProvider>(builder: (context, themeProvider, child) => Icon(Icons.language, color: themeProvider.accentColor)),
-            title: Text('Visit Website'),
-            onTap: () => _launchWebsite(coffeeShop.website),
+            leading: Consumer<ThemeProvider>(builder: (context, themeProvider, child) => Icon(
+              coffeeShop.isOpen ? Icons.access_time : Icons.access_time_filled,
+              color: coffeeShop.isOpen ? Colors.green : Colors.red,
+            )),
+            title: Text('Status'),
+            subtitle: Text(
+              coffeeShop.isOpen ? 'Open now' : 'Closed now',
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: coffeeShop.isOpen ? Colors.green : Colors.red,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            trailing: Text(
+              coffeeShop.openingHours.getTodayHours(),
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                color: Colors.grey[600],
+              ),
+            ),
           ),
         ],
       ),
@@ -791,28 +958,7 @@ class _CoffeeShopDetailScreenState extends State<CoffeeShopDetailScreen>
     }
   }
 
-  void _launchMaps(CoffeeShop coffeeShop) async {
-    final url = 'https://www.google.com/maps/search/?api=1&query=${coffeeShop.latitude},${coffeeShop.longitude}';
-    if (await canLaunchUrl(Uri.parse(url))) {
-      await launchUrl(Uri.parse(url));
-    }
-  }
 
-  void _makeReservation(String phoneNumber) async {
-    // Remove any non-digit characters for WhatsApp
-    final cleanPhone = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
-    final message = Uri.encodeComponent('Hi! I would like to make a reservation at your coffee shop.');
-    final url = 'https://wa.me/$cleanPhone?text=$message';
-    if (await canLaunchUrl(Uri.parse(url))) {
-      await launchUrl(Uri.parse(url));
-    }
-  }
-
-  void _launchWebsite(String website) async {
-    if (await canLaunchUrl(Uri.parse(website))) {
-      await launchUrl(Uri.parse(website));
-    }
-  }
 
   void _launchSocialMedia(String url) async {
     if (await canLaunchUrl(Uri.parse(url))) {
@@ -855,9 +1001,10 @@ class _CoffeeShopDetailScreenState extends State<CoffeeShopDetailScreen>
         );
       } else if (result is Map<String, dynamic>) {
         // Handle visited case with the map data directly
+        final personalRating = result['personalRating'];
         provider.markAsVisited(
           coffeeShop.id,
-          rating: result['personalRating'],
+          rating: personalRating is double ? personalRating.round() : (personalRating as int?),
           note: result['privateReview'],
           visitDates: result['visitDates'],
         );
@@ -963,6 +1110,135 @@ class _CoffeeShopDetailScreenState extends State<CoffeeShopDetailScreen>
       );
     }
   }
+
+  // Google Maps Integration Methods
+  void _openDirections(CoffeeShop coffeeShop) async {
+    final provider = context.read<CoffeeShopProvider>();
+
+    await GoogleMapsHelper.openDirections(
+      destinationLat: coffeeShop.latitude,
+      destinationLng: coffeeShop.longitude,
+      destinationName: coffeeShop.name,
+      originLat: provider.userLatitude != 0.0 ? provider.userLatitude : null,
+      originLng: provider.userLongitude != 0.0 ? provider.userLongitude : null,
+    );
+  }
+
+  void _shareLocation(CoffeeShop coffeeShop) async {
+    // Copy to clipboard - use place_id for proper Google Maps cafe link
+    // Only use if it looks like a valid Google Place ID (length > 10)
+    final placeId = (coffeeShop.id.length > 10) ? coffeeShop.id : null;
+    
+    final mapUrl = GoogleMapsHelper.getShareableMapUrl(
+      lat: coffeeShop.latitude,
+      lng: coffeeShop.longitude,
+      name: coffeeShop.name,
+      placeId: placeId,
+    );
+
+    await Clipboard.setData(ClipboardData(text: mapUrl));
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Google Maps link copied!',
+            style: GoogleFonts.inter(),
+          ),
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  void _callPhone(String phoneNumber) async {
+    final Uri url = Uri.parse('tel:$phoneNumber');
+    try {
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not make phone call')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error making phone call')),
+        );
+      }
+    }
+  }
+
+  void _shareCoffeeShop(CoffeeShop coffeeShop) async {
+    try {
+      // Only copy Google Maps link
+      final mapUrl = GoogleMapsHelper.getShareableMapUrl(
+        lat: coffeeShop.latitude,
+        lng: coffeeShop.longitude,
+        name: coffeeShop.name,
+      );
+
+      await Clipboard.setData(ClipboardData(text: mapUrl));
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Google Maps link copied!',
+              style: GoogleFonts.inter(),
+            ),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Error sharing coffee shop',
+              style: GoogleFonts.inter(),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  void _openWebsite(String websiteUrl) async {
+    Uri url;
+    if (websiteUrl.startsWith('http')) {
+      url = Uri.parse(websiteUrl);
+    } else {
+      url = Uri.parse('https://$websiteUrl');
+    }
+
+    try {
+      if (await canLaunchUrl(url)) {
+        await launchUrl(
+          url,
+          mode: LaunchMode.externalApplication,
+        );
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not open website')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error opening website')),
+        );
+      }
+    }
+  }
 }
 
 class PhotoViewerScreen extends StatefulWidget {
@@ -1036,5 +1312,30 @@ class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
         },
       ),
     );
+  }
+}
+
+class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
+  final TabBar _tabBar;
+
+  _SliverAppBarDelegate(this._tabBar);
+
+  @override
+  double get minExtent => _tabBar.preferredSize.height;
+  @override
+  double get maxExtent => _tabBar.preferredSize.height;
+
+  @override
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: _tabBar,
+    );
+  }
+
+  @override
+  bool shouldRebuild(_SliverAppBarDelegate oldDelegate) {
+    return false;
   }
 }

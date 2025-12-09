@@ -5,14 +5,21 @@ import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import '../models/coffee_shop.dart';
-import '../services/simple_places_service.dart';
+import '../services/coffee_shop_repository.dart';
+import '../services/places_service.dart';
 import '../services/personal_tracking_service.dart';
 import '../services/recommendation_service.dart';
+import '../services/firebase_service.dart';
+import '../services/firebase_sync_service.dart';
+import '../utils/cache_manager.dart';
+import '../utils/logger.dart';
+import '../utils/debouncer.dart';
 
 class CoffeeShopProvider extends ChangeNotifier {
   // Private fields
   List<CoffeeShop> _coffeeShops = [];
   List<CoffeeShop> _nearbyCoffeeShops = [];
+  Set<String> _favoriteIds = {}; // Track favorite IDs independently for quick lookup
   bool _isLoading = false;
   bool _isLoadingMore = false;
   bool _hasMoreCafes = true;
@@ -23,10 +30,33 @@ class CoffeeShopProvider extends ChangeNotifier {
   double _userLongitude = 0.0;
   String _userLocation = 'Getting location...'; // Real-time GPS location
   String _activeFilter = 'all'; // 'all', 'nearby', 'topRated', 'openNow'
+  
+  // Flag to prevent re-initialization
+  bool _isInitialized = false;
+
+  // Pagination fields for infinite scroll
+  List<CoffeeShop> _displayedCoffeeShops = [];
+  int _allCafesPage = 0;
+  int _nearbyCafesPage = 0;
+  int _topRatedPage = 0;
+  int _topReviewPage = 0;
+  int _pageSize = 10; // Load 10 more items per page
+
+  // Location field for distance calculations
+  Position? _currentPosition;
 
   // Service instances
-  final SimplePlacesService _placesService = SimplePlacesService();
+  // Repository
+  late final CoffeeShopRepository _repository;
   final PersonalTrackingService _trackingService = PersonalTrackingService();
+  final PlacesService _placesService = PlacesService();
+  final CacheManager _cacheManager = CacheManager();
+
+  final LocationDebouncer _locationDebouncer = LocationDebouncer();
+
+  // Performance tracking
+  DateTime? _lastUpdateTime;
+  bool _isRefreshing = false;
 
   // Public getters
   List<CoffeeShop> get coffeeShops => _coffeeShops;
@@ -51,12 +81,9 @@ class CoffeeShopProvider extends ChangeNotifier {
   }
 
   CoffeeShopProvider() {
-    // Initialize Places API first
-    SimplePlacesService.initialize();
-    _initializeCoffeeShops();
-    // Load tracking data from persistent storage AFTER coffee shops are loaded
-    _loadTrackingDataFromPersistentStorage();
-    _updateUserLocation();
+    _repository = CoffeeShopRepository();
+    // Initialize repository/services
+    PlacesService.initialize();
   }
 
   // Initialize method that can be called after construction
@@ -65,27 +92,58 @@ class CoffeeShopProvider extends ChangeNotifier {
     await _updateUserLocation();
   }
 
-  // Initialize with offline JSON data as fallback
+  /// Initialize only if not already initialized - prevents re-init on navigation
+  Future<void> initializeIfNeeded() async {
+    if (_isInitialized && _coffeeShops.isNotEmpty) return;
+    _isInitialized = true;
+    await _initializeCoffeeShops();
+  }
+
+  // Initialize coffee shops
   Future<void> _initializeCoffeeShops() async {
     _setLoading(true);
     try {
-      // Try to get real-time location first
+      // Get user location first for distance calculations
       await _updateUserLocation();
 
-      // If we have user location, try nearby search first
+      // If we have valid location, try to load REAL data from API first
       if (_userLatitude != 0.0 && _userLongitude != 0.0) {
-        await _loadNearbyCoffeeShops();
+        try {
+          // Attempt API load
+          await _loadNearbyCoffeeShops();
+          
+          // If API returned no results (but didn't crash), falls back to local below?
+          // _loadNearbyCoffeeShops sets _coffeeShops if successful.
+          if (_coffeeShops.isEmpty) {
+             throw Exception('No API results');
+          }
+        } catch (e) {
+          // API failed or returned empty: Fallback to Local Random
+          if (kDebugMode) {
+            print('⚠️ API load failed, falling back to local: $e');
+          }
+          await _loadLocalCoffeeShops(randomize: true);
+        }
       } else {
-        // Fallback to JSON data
-        await _useJsonDataWithDistance();
+        // No location: Load RANDOM cafes locally
+        await _loadLocalCoffeeShops(randomize: true);
       }
+      
+      // Apply the active filter
+      _applyActiveFilter();
+      
+      // Load tracking data
+      await _loadTrackingDataFromPersistentStorage();
     } catch (e) {
       if (kDebugMode) {
         print('Error initializing coffee shops: $e');
       }
       // Fallback to JSON data if all else fails
-      await _useJsonDataWithDistance();
+      if (_coffeeShops.isEmpty) {
+        await _loadLocalCoffeeShops(randomize: true);
+      }
     } finally {
+      // Ensure we don't leave loading state stuck
       _setLoading(false);
     }
   }
@@ -119,6 +177,7 @@ class CoffeeShopProvider extends ChangeNotifier {
         desiredAccuracy: LocationAccuracy.high,
       );
 
+      _currentPosition = position;
       _userLatitude = position.latitude;
       _userLongitude = position.longitude;
 
@@ -130,20 +189,83 @@ class CoffeeShopProvider extends ChangeNotifier {
 
       if (placemarks.isNotEmpty) {
         Placemark place = placemarks[0];
-        String city = place.locality ?? place.subAdministrativeArea ?? '';
-        String sublocality = place.subLocality ?? place.name ?? '';
 
-        if (sublocality.isNotEmpty && city.isNotEmpty) {
-          _userLocation = '$sublocality, $city';
-        } else if (city.isNotEmpty) {
-          _userLocation = city;
-        } else if (sublocality.isNotEmpty) {
-          _userLocation = sublocality;
+        // Build location string with proper international support
+        List<String> locationParts = [];
+
+        // Add street/area if available
+        if (place.thoroughfare?.isNotEmpty == true) {
+          locationParts.add(place.thoroughfare!);
+        } else if (place.subLocality?.isNotEmpty == true) {
+          locationParts.add(place.subLocality!);
+        } else if (place.name?.isNotEmpty == true && !place.name!.contains('Unnamed')) {
+          locationParts.add(place.name!);
+        }
+
+        // Determine country for proper formatting
+        final country = place.country ?? '';
+        final isIndonesia = country.toLowerCase() == 'indonesia';
+
+        // Build location string based on country
+        if (isIndonesia) {
+          // Indonesian format: District, City
+          String? city;
+          if (place.locality?.isNotEmpty == true) {
+            city = place.locality;
+          } else if (place.subAdministrativeArea?.isNotEmpty == true) {
+            city = place.subAdministrativeArea;
+          } else if (place.administrativeArea?.isNotEmpty == true) {
+            city = place.administrativeArea;
+          }
+
+          if (city != null && city.isNotEmpty) {
+            locationParts.add(city);
+          }
+
+          // Only add country if we need more context
+          if (locationParts.length < 2) {
+            locationParts.add('Indonesia');
+          }
+        } else {
+          // International format: Street/District, City, State/Country
+
+          // Add city/town first
+          String? city;
+          if (place.locality?.isNotEmpty == true) {
+            city = place.locality;
+          } else if (place.subAdministrativeArea?.isNotEmpty == true) {
+            city = place.subAdministrativeArea;
+          } else if (place.administrativeArea?.isNotEmpty == true) {
+            city = place.administrativeArea;
+          }
+
+          if (city != null && city.isNotEmpty) {
+            locationParts.add(city);
+          }
+
+          // Add state/province for international locations
+          if (place.administrativeArea?.isNotEmpty == true &&
+              place.administrativeArea != city) {
+            locationParts.add(place.administrativeArea!);
+          }
+
+          // Always add country for international locations
+          if (country.isNotEmpty) {
+            locationParts.add(country);
+          }
+        }
+
+        // Build final location string
+        if (locationParts.isNotEmpty) {
+          _userLocation = locationParts.join(', ');
+          AppLogger.info('Location parsed: $_userLocation', tag: 'Location');
         } else {
           _userLocation = 'Unknown location';
+          AppLogger.warning('Could not parse location from: ${place.toJson()}', tag: 'Location');
         }
       } else {
         _userLocation = 'Location found';
+        AppLogger.debug('Location found but no placemarks', tag: 'Location');
       }
 
       notifyListeners();
@@ -156,10 +278,10 @@ class CoffeeShopProvider extends ChangeNotifier {
     }
   }
 
-  // Load nearby coffee shops using Google Places API
+  // Load nearby coffee shops
   Future<void> _loadNearbyCoffeeShops({bool isLoadMore = false}) async {
     if (_userLatitude == 0.0 || _userLongitude == 0.0) {
-      await _useJsonDataWithDistance();
+      await _loadLocalCoffeeShops();
       return;
     }
 
@@ -172,15 +294,10 @@ class CoffeeShopProvider extends ChangeNotifier {
     }
 
     try {
-      // Check if Places API is available
-      if (!SimplePlacesService.isInitialized) {
-        throw Exception('Places API not initialized');
-      }
-
-      final cafes = await _placesService.findNearbyCafes(
-        _userLatitude,
-        _userLongitude,
-        radius: 5000, // 5km radius for more results
+      final cafes = await _repository.getNearbyCoffeeShops(
+        lat: _userLatitude,
+        lng: _userLongitude,
+        radius: 5000,
         limit: _currentLimit,
       );
 
@@ -190,19 +307,6 @@ class CoffeeShopProvider extends ChangeNotifier {
         } else {
           _coffeeShops.addAll(cafes);
         }
-
-        // Calculate distances for all cafes
-        _coffeeShops = _coffeeShops.map((cafe) {
-          final distanceInMeters = Geolocator.distanceBetween(
-            _userLatitude,
-            _userLongitude,
-            cafe.latitude,
-            cafe.longitude,
-          );
-          // Convert meters to kilometers
-          final distanceInKm = distanceInMeters / 1000.0;
-          return cafe.copyWith(distance: distanceInKm);
-        }).toList();
 
         // Sort by distance
         _coffeeShops.sort((a, b) => a.distance.compareTo(b.distance));
@@ -221,7 +325,7 @@ class CoffeeShopProvider extends ChangeNotifier {
 
       // Fallback to JSON data
       if (!isLoadMore) {
-        await _useJsonDataWithDistance();
+        await _loadLocalCoffeeShops();
       }
     } finally {
       if (!isLoadMore) {
@@ -233,70 +337,60 @@ class CoffeeShopProvider extends ChangeNotifier {
     }
   }
 
-  // Load coffee shops from JSON asset with calculated distances
-  Future<void> _useJsonDataWithDistance() async {
+  // Load coffee shops from JSON asset
+  Future<void> _loadLocalCoffeeShops({bool randomize = false}) async {
     try {
-      final String jsonString = await rootBundle.loadString('assets/data/coffee_shops.json');
-      final List<dynamic> jsonList = json.decode(jsonString);
+      _coffeeShops = await _repository.getLocalCoffeeShops(
+        userLat: _userLatitude != 0.0 ? _userLatitude : null,
+        userLng: _userLongitude != 0.0 ? _userLongitude : null,
+        randomize: randomize,
+      );
 
-      _coffeeShops = jsonList.map((json) => CoffeeShop.fromJson(json)).toList();
-
-      // Randomize order for variety on each app restart
-      _coffeeShops.shuffle(math.Random());
-
-      // Calculate distances if we have user location
-      if (_userLatitude != 0.0 && _userLongitude != 0.0) {
-        _coffeeShops = _coffeeShops.map((cafe) {
-          final distanceInMeters = Geolocator.distanceBetween(
-            _userLatitude,
-            _userLongitude,
-            cafe.latitude,
-            cafe.longitude,
-          );
-          // Convert meters to kilometers
-          final distanceInKm = distanceInMeters / 1000.0;
-          return cafe.copyWith(distance: distanceInKm);
-        }).toList();
-
-        // Sort by distance
+      // Sort by distance if not randomized and we have location
+      if (!randomize && _userLatitude != 0.0) {
         _coffeeShops.sort((a, b) => a.distance.compareTo(b.distance));
       }
 
       _applyActiveFilter();
     } catch (e) {
       if (kDebugMode) {
-        print('Error loading JSON data: $e');
+        print('Error loading local data: $e');
       }
       _error = 'Failed to load coffee data: $e';
     }
+  }
+
+  // Alias for backwards compatibility - load JSON data with distance calculations
+  Future<void> _useJsonDataWithDistance({bool randomize = false}) async {
+    await _loadLocalCoffeeShops(randomize: randomize);
   }
 
   // Apply the active filter to coffee shops
   void _applyActiveFilter() {
     switch (_activeFilter) {
       case 'nearby':
-        final nearby = _coffeeShops.where((cafe) => cafe.distance <= 5.0).toList(); // 5km in kilometers
+        final nearby = _coffeeShops.where((cafe) => cafe.distance <= 10.0).toList(); // 10km in kilometers
         nearby.sort((a, b) => a.distance.compareTo(b.distance)); // Sort by distance
         _nearbyCoffeeShops = nearby.take(_currentLimit).toList();
-        _hasMoreCafes = _coffeeShops.length > _currentLimit && nearby.length >= _currentLimit;
+        _hasMoreCafes = nearby.length > _currentLimit;
         break;
       case 'topRated':
         final topRated = _coffeeShops.where((cafe) => cafe.rating >= 4.0).toList();
         topRated.sort((a, b) => b.rating.compareTo(a.rating)); // Sort by rating (highest first)
         _nearbyCoffeeShops = topRated.take(_currentLimit).toList();
-        _hasMoreCafes = _coffeeShops.length > _currentLimit && topRated.length >= _currentLimit;
+        _hasMoreCafes = topRated.length > _currentLimit;
         break;
       case 'topReview':
         final topReview = List<CoffeeShop>.from(_coffeeShops);
         topReview.sort((a, b) => b.reviewCount.compareTo(a.reviewCount)); // Sort by review count
         _nearbyCoffeeShops = topReview.take(_currentLimit).toList();
-        _hasMoreCafes = _coffeeShops.length > _currentLimit && topReview.length >= _currentLimit;
+        _hasMoreCafes = topReview.length > _currentLimit;
         break;
       case 'openNow':
         final openNow = _coffeeShops.where((cafe) => cafe.isOpen).toList();
         openNow.sort((a, b) => a.distance.compareTo(b.distance)); // Sort open cafes by distance
         _nearbyCoffeeShops = openNow.take(_currentLimit).toList();
-        _hasMoreCafes = _coffeeShops.length > _currentLimit && openNow.length >= _currentLimit;
+        _hasMoreCafes = openNow.length > _currentLimit;
         break;
       case 'recommended':
         // This is handled by applyRecommendationFilter method
@@ -310,7 +404,7 @@ class CoffeeShopProvider extends ChangeNotifier {
     }
 
     if (kDebugMode && _activeFilter != 'recommended') {
-      print('Filter "$_activeFilter": ${_coffeeShops.length} total, showing ${_nearbyCoffeeShops.length}');
+      print('Filter "$_activeFilter": ${_coffeeShops.length} total, showing ${_nearbyCoffeeShops.length}, hasMore: $_hasMoreCafes');
     }
   }
 
@@ -320,13 +414,23 @@ class CoffeeShopProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Public setLoading method for pagination
+  void setLoading(bool loading) {
+    _setLoading(loading);
+  }
+
+  // Calculate distance between two points
+  double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+    return Geolocator.distanceBetween(lat1, lon1, lat2, lon2) / 1000.0; // Convert to km
+  }
+
   // Update nearby coffee shops (for pull-to-refresh)
   Future<void> updateNearbyCoffeeShops({bool forceRefresh = false}) async {
     await _updateUserLocation();
     await _loadNearbyCoffeeShops();
   }
 
-  // Search coffee shops by query
+  // Search coffee shops by query (optimized with debouncing and caching)
   Future<void> searchCoffeeShops(String query) async {
     if (query.trim().isEmpty) {
       _searchQuery = null;
@@ -339,66 +443,96 @@ class CoffeeShopProvider extends ChangeNotifier {
     _error = null;
 
     try {
-      // Check if Places API is available
-      if (!SimplePlacesService.isInitialized) {
-        // Fallback to local search in JSON data
-        await _useJsonDataWithDistance();
+      AppLogger.debug('Searching for: $query', tag: 'Search');
+
+      // Use repository for search
+      final results = await _repository.searchCoffeeShops(
+        query: query,
+        userLat: _userLatitude != 0.0 ? _userLatitude : null,
+        userLng: _userLongitude != 0.0 ? _userLongitude : null,
+        maxResults: _currentLimit,
+      );
+
+      if (results.isEmpty && !PlacesService.isInitialized) {
+        // Fallback to local filtering if API not available/Repository returned empty for API issue
+        await _loadLocalCoffeeShops();
         _coffeeShops = _coffeeShops.where((cafe) =>
           cafe.name.toLowerCase().contains(query.toLowerCase()) ||
           cafe.description.toLowerCase().contains(query.toLowerCase()) ||
           cafe.address.toLowerCase().contains(query.toLowerCase())
         ).toList();
       } else {
-        // Use Google Places API for search
-        List<CoffeeShop> searchResults = [];
-
-        if (_userLatitude != 0.0 && _userLongitude != 0.0) {
-          searchResults = await _placesService.searchCafesWithFilters(
-            query: query,
-            userLat: _userLatitude,
-            userLng: _userLongitude,
-            maxResults: _currentLimit,
-          );
-        } else {
-          searchResults = await _placesService.searchCafes(query);
-        }
-
-        _coffeeShops = searchResults;
+        _coffeeShops = results;
       }
 
       _applyActiveFilter();
     } catch (e) {
-      if (kDebugMode) {
-        print('Error searching coffee shops: $e');
-      }
+      AppLogger.error('Error searching coffee shops', error: e, tag: 'Search');
       _error = 'Failed to search: $e';
     } finally {
       _setLoading(false);
     }
   }
 
-  // Load more coffee shops
+  // Load more coffee shops with pagination
   Future<void> loadMoreCoffeeShops() async {
     if (_isLoadingMore || !_hasMoreCafes) return;
 
-    _currentLimit += 20;
     _isLoadingMore = true;
     notifyListeners();
 
-    if (_userLatitude != 0.0 && _userLongitude != 0.0 && SimplePlacesService.isInitialized) {
-      await _loadNearbyCoffeeShops(isLoadMore: true);
-    } else {
-      _applyActiveFilter();
+    try {
+      AppLogger.info('Loading more cafes... currentLimit: $_currentLimit, total: ${_coffeeShops.length}', tag: 'Pagination');
+      
+      if (_activeFilter == 'all') {
+        // For "All" filter - show more from existing shuffled list
+        if (_coffeeShops.length > _currentLimit) {
+          _currentLimit += 10;
+          _nearbyCoffeeShops = _coffeeShops.take(_currentLimit).toList();
+          AppLogger.info('Showing $_currentLimit of ${_coffeeShops.length} cafes', tag: 'Pagination');
+        } else {
+          // No more cafes to show
+          _hasMoreCafes = false;
+          AppLogger.info('No more cafes to load', tag: 'Pagination');
+        }
+      } else {
+        // For other filters, show more from already-filtered list
+        final previousCount = _nearbyCoffeeShops.length;
+        _currentLimit += 10;
+        _applyActiveFilter();
+        
+        // Check if we've shown all available cafes for this filter
+        if (_nearbyCoffeeShops.length == previousCount) {
+          _hasMoreCafes = false;
+          AppLogger.info('No more filtered cafes to load', tag: 'Pagination');
+        }
+      }
+    } catch (e) {
+      AppLogger.error('Error loading more cafes', error: e, tag: 'Pagination');
+      _hasMoreCafes = false;
+    } finally {
       _isLoadingMore = false;
       notifyListeners();
     }
   }
 
-  // Set active filter
-  void setActiveFilter(String filter) {
+  // Set active filter - other filters just re-sort existing data
+  Future<void> setActiveFilter(String filter, {bool isRefresh = false}) async {
+    if (_activeFilter == filter && !isRefresh) return;
+
     _activeFilter = filter;
-    _currentLimit = 20; // Reset limit when changing filter
-    _applyActiveFilter();
+    
+    // Reset limit when switching filters
+    _currentLimit = 20;
+
+    // Only "All" refresh reloads new random data
+    if (isRefresh && filter == 'all') {
+      await refreshCoffeeShops();
+    } else {
+      // Other filters (or non-refresh) just re-sort existing _coffeeShops
+      _applyActiveFilter();
+    }
+
     notifyListeners();
   }
 
@@ -414,10 +548,41 @@ class CoffeeShopProvider extends ChangeNotifier {
     await _loadTrackingDataFromPersistentStorage();
   }
 
+  // Remove coffee shop from visited list
+  Future<void> removeFromVisited(String coffeeShopId) async {
+    await _trackingService.removeFromVisited(coffeeShopId);
+    await _loadTrackingDataFromPersistentStorage();
+  }
+
   // Toggle coffee shop favorite status
   Future<void> toggleFavorite(String coffeeShopId) async {
-    await _trackingService.toggleFavorite(coffeeShopId);
-    await _loadTrackingDataFromPersistentStorage();
+    // Optimistically update local state first
+    if (_favoriteIds.contains(coffeeShopId)) {
+      _favoriteIds.remove(coffeeShopId);
+    } else {
+      _favoriteIds.add(coffeeShopId);
+    }
+    notifyListeners(); // Immediate feedback
+
+    // Toggle in local storage and sync (async)
+    try {
+      await _trackingService.toggleFavorite(coffeeShopId);
+      
+      // We don't need to full reload tracking data if we just want to update favorites
+      // But _loadTrackingDataFromPersistentStorage updates the _coffeeShops list objects too
+      await _loadTrackingDataFromPersistentStorage();
+    } catch (e) {
+      // Revert if failed
+      if (_favoriteIds.contains(coffeeShopId)) {
+        _favoriteIds.remove(coffeeShopId);
+      } else {
+        _favoriteIds.add(coffeeShopId);
+      }
+      notifyListeners();
+      if (kDebugMode) {
+        print('❌ Failed to toggle favorite: $e');
+      }
+    }
   }
 
   // Get want-to-visit coffee shops (sync version for screens)
@@ -427,7 +592,26 @@ class CoffeeShopProvider extends ChangeNotifier {
 
   // Get favorite coffee shops (sync version for screens)
   List<CoffeeShop> get favoriteCoffeeShops {
-    return _coffeeShops.where((shop) => shop.isFavorite).toList();
+    var favoriteShops = _coffeeShops.where((shop) => shop.isFavorite).toList();
+
+    // Calculate distances for favorite shops
+    if (_userLatitude != 0.0 && _userLongitude != 0.0) {
+      favoriteShops = favoriteShops.map((cafe) {
+        final distanceInMeters = Geolocator.distanceBetween(
+          _userLatitude,
+          _userLongitude,
+          cafe.latitude,
+          cafe.longitude,
+        );
+        final distanceInKm = distanceInMeters / 1000.0;
+        return cafe.copyWith(distance: distanceInKm);
+      }).toList();
+
+      // Sort by distance
+      favoriteShops.sort((a, b) => a.distance.compareTo(b.distance));
+    }
+
+    return favoriteShops;
   }
 
   // Get visited coffee shops (sync version for screens)
@@ -447,9 +631,57 @@ class CoffeeShopProvider extends ChangeNotifier {
   }
 
   // Get favorite coffee shops (async version)
+  // Get favorite coffee shops (async version)
   Future<List<CoffeeShop>> getFavoriteCoffeeShops() async {
-    final favoriteIds = await _trackingService.getFavorites();
-    return _coffeeShops.where((shop) => favoriteIds.contains(shop.id)).toList();
+    // Use in-memory _favoriteIds as source of truth to ensure immediate UI updates
+    // (avoiding race condition where disk hasn't updated yet after toggle)
+    final favoriteIds = _favoriteIds.toList();
+    
+    // Get favorites available in local memory cache
+    var favoriteShops = _coffeeShops.where((shop) => _favoriteIds.contains(shop.id)).toList();
+    
+    // Find IDs that are NOT in local cache (e.g. from Explore/Search)
+    final cachedIds = favoriteShops.map((s) => s.id).toSet();
+    final missingIds = favoriteIds.where((id) => id.isNotEmpty && !cachedIds.contains(id)).toList();
+    
+    // Fetch details for missing IDs
+    if (missingIds.isNotEmpty) {
+      // Fetch in parallel
+      final fetchedFutures = missingIds.map((id) async {
+         try {
+           return await _repository.getCoffeeShopById(id);
+         } catch (e) {
+           return null;
+         }
+      });
+      
+      final fetchedShops = await Future.wait(fetchedFutures);
+      for (final shop in fetchedShops) {
+        if (shop != null) {
+          // Identify it as favorite
+          favoriteShops.add(shop.copyWith(isFavorite: true));
+        }
+      }
+    }
+
+    // Calculate distances for favorite shops
+    if (_userLatitude != 0.0 && _userLongitude != 0.0) {
+      favoriteShops = favoriteShops.map((cafe) {
+        final distanceInMeters = Geolocator.distanceBetween(
+          _userLatitude,
+          _userLongitude,
+          cafe.latitude,
+          cafe.longitude,
+        );
+        final distanceInKm = distanceInMeters / 1000.0;
+        return cafe.copyWith(distance: distanceInKm);
+      }).toList();
+
+      // Sort by distance
+      favoriteShops.sort((a, b) => a.distance.compareTo(b.distance));
+    }
+
+    return favoriteShops;
   }
 
   // Get visited coffee shops (async version)
@@ -465,7 +697,7 @@ class CoffeeShopProvider extends ChangeNotifier {
     final wishlistIds = await _trackingService.getWishlist();
     final favoriteIds = await _trackingService.getFavorites();
 
-    final trackedIds = {...wishlistIds, ...favoriteIds};
+    final trackedIds = <String>{...wishlistIds, ...favoriteIds};
 
     return _coffeeShops.where((shop) =>
       !trackedIds.contains(shop.id) &&
@@ -527,6 +759,11 @@ class CoffeeShopProvider extends ChangeNotifier {
     }
   }
 
+  // Check if a coffee shop is a favorite (fast lookup by ID)
+  bool isFavorite(String id) {
+    return _favoriteIds.contains(id);
+  }
+
   // Load tracking data from persistent storage and update coffee shops
   Future<void> _loadTrackingDataFromPersistentStorage() async {
     try {
@@ -546,9 +783,8 @@ class CoffeeShopProvider extends ChangeNotifier {
           visitData = shopVisitData;
         } else if (wishlistIds.contains(shop.id)) {
           status = CafeTrackingStatus.wantToVisit;
-        } else if (favoriteIds.contains(shop.id)) {
-          status = CafeTrackingStatus.wantToVisit;
         }
+        // Note: favorites do NOT affect trackingStatus - they have their own isFavorite field
 
         updatedShops.add(shop.copyWith(
           trackingStatus: status,
@@ -561,6 +797,7 @@ class CoffeeShopProvider extends ChangeNotifier {
       _applyActiveFilter();
 
       print('✅ Tracking data loaded: ${wishlistIds.length} wishlist, ${favoriteIds.length} favorites');
+      _favoriteIds = Set<String>.from(favoriteIds);
       notifyListeners();
     } catch (e) {
       print('❌ Error loading tracking data: $e');
@@ -570,24 +807,172 @@ class CoffeeShopProvider extends ChangeNotifier {
     }
   }
 
-  // Refresh coffee shops with new random order
+  // Refresh coffee shops with new random order and diverse results
   Future<void> refreshCoffeeShops() async {
+    if (_isRefreshing) return; // Prevent multiple simultaneous refreshes
+
+    _isRefreshing = true;
     _setLoading(true);
     _error = null;
 
     try {
-      // Reload JSON data to get fresh random order
-      await _useJsonDataWithDistance();
+      AppLogger.info('Refreshing coffee shops with enhanced diversity', tag: 'Refresh');
+
+      // Clear cache to force fresh data
+      await _cacheManager.clearAll();
+
+      // Reset pagination limits
+      _currentLimit = 20;
+
+      // Update location for fresh results
+      await _updateUserLocation();
+
+      // Check if Places API is available for diverse results
+      if (PlacesService.isInitialized && _userLatitude != 0.0) {
+        // Use API with enhanced random parameters for maximum diversity
+        await _loadDiverseCoffeeShopsFromAPI();
+      } else {
+        // Fallback to JSON with fresh random order
+        await _useJsonDataWithDistance(randomize: true);
+      }
 
       // Apply tracking data to maintain user's existing tracking
       await _loadTrackingDataFromPersistentStorage();
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error refreshing coffee shops: $e');
+
+      // Clear any existing filter to show fresh results
+      if (_activeFilter == 'all') {
+        _nearbyCoffeeShops = _coffeeShops.take(_currentLimit).toList();
+        _hasMoreCafes = _coffeeShops.length > _currentLimit;
+      } else {
+        _applyActiveFilter();
       }
+
+      AppLogger.success('Coffee shops refreshed successfully: ${_coffeeShops.length} total', tag: 'Refresh');
+    } catch (e) {
+      AppLogger.error('Error refreshing coffee shops', error: e, tag: 'Refresh');
       _error = 'Failed to refresh coffee shops: $e';
     } finally {
+      _isRefreshing = false;
       _setLoading(false);
+    }
+  }
+
+  // Load diverse coffee shops from API with random parameters
+  Future<void> _loadDiverseCoffeeShopsFromAPI() async {
+    try {
+      AppLogger.info('Loading diverse coffee shops from API', tag: 'API');
+
+      // Generate random search terms for diversity
+      final random = math.Random();
+      final searchTerms = [
+        'coffee shop',
+        'cafe',
+        'espresso',
+        'latte art',
+        'wifi coffee',
+        'study cafe',
+        'breakfast coffee',
+        'specialty coffee',
+        'coffee beans',
+        'local coffee',
+        'third wave coffee',
+        'artisan coffee',
+        'roastery',
+        'coffee house',
+        'kopi',
+        'coffee bar',
+      ];
+
+      // Use multiple search terms and radius variations for diversity
+      List<CoffeeShop> diverseResults = [];
+      final selectedTerms = searchTerms..shuffle(random);
+      final numTerms = math.min(4, selectedTerms.length); // Use up to 4 different terms
+
+      // Vary radius for different search types
+      final radii = [3000, 5000, 8000, 12000]; // 3km, 5km, 8km, 12km
+      radii.shuffle(random);
+
+      for (int i = 0; i < numTerms; i++) {
+        final term = selectedTerms[i];
+        final radius = radii[i % radii.length];
+
+        try {
+          List<CoffeeShop> results;
+
+          // Use radius-based search for first half, text search for second half
+          if (i < (numTerms / 2)) {
+            results = await _placesService.findNearbyCafes(
+              _userLatitude,
+              _userLongitude,
+              radius: radius,
+              limit: 20,
+            );
+          } else {
+            results = await _placesService.searchCafesWithFilters(
+              query: term,
+              userLat: _userLatitude,
+              userLng: _userLongitude,
+              maxResults: 20,
+            );
+          }
+
+          // Add results that aren't already in our list
+          for (final cafe in results) {
+            if (!diverseResults.any((existing) => existing.id == cafe.id)) {
+              diverseResults.add(cafe);
+            }
+          }
+        } catch (e) {
+          AppLogger.warning('Failed search for term: $term, radius: $radius', tag: 'API');
+          continue; // Continue with next term even if one fails
+        }
+      }
+
+      // Calculate distances if not already calculated
+      if (_userLatitude != 0.0 && _userLongitude != 0.0) {
+        diverseResults = diverseResults.map((cafe) {
+          final distanceInMeters = Geolocator.distanceBetween(
+            _userLatitude,
+            _userLongitude,
+            cafe.latitude,
+            cafe.longitude,
+          );
+          final distanceInKm = distanceInMeters / 1000.0;
+          return cafe.copyWith(distance: distanceInKm);
+        }).toList();
+      }
+
+      // Mix sorting: partially by distance, partially random for discovery
+      final sortedByDistance = List<CoffeeShop>.from(diverseResults)
+        ..sort((a, b) => a.distance.compareTo(b.distance));
+
+      final shuffled = List<CoffeeShop>.from(diverseResults)..shuffle(random);
+
+      // Combine: 60% distance-sorted, 40% random for discovery
+      final distanceCount = (sortedByDistance.length * 0.6).round();
+      final randomCount = (shuffled.length * 0.4).round();
+
+      diverseResults = [
+        ...sortedByDistance.take(distanceCount),
+        ...shuffled.take(randomCount),
+      ];
+
+      // Remove duplicates that might appear in both lists
+      final uniqueCafes = <String>{};
+      diverseResults = diverseResults.where((cafe) {
+        if (uniqueCafes.contains(cafe.id)) return false;
+        uniqueCafes.add(cafe.id);
+        return true;
+      }).toList();
+
+      _coffeeShops = diverseResults.take(60).toList(); // Increased limit for more variety
+      _applyActiveFilter();
+
+      AppLogger.success('Loaded ${_coffeeShops.length} diverse coffee shops', tag: 'API');
+    } catch (e) {
+      AppLogger.error('Error loading diverse coffee shops from API', error: e, tag: 'API');
+      // Fallback to JSON with enhanced randomization
+      await _useJsonDataWithDistance(randomize: true);
     }
   }
 
@@ -682,6 +1067,212 @@ class CoffeeShopProvider extends ChangeNotifier {
       _error = 'Failed to get recommendations: $e';
     } finally {
       _setLoading(false);
+    }
+  }
+
+  // Pagination methods for infinite scroll
+
+
+
+
+
+
+
+
+
+  /// Get visible coffee shops based on current filter and pagination
+  List<CoffeeShop> getVisibleCoffeeShops() {
+    switch (_activeFilter) {
+      case 'all':
+      case 'nearby':
+      case 'topRated':
+      case 'topReview':
+      case 'openNow':
+      case 'recommended':
+        return _nearbyCoffeeShops;
+      default:
+        return _coffeeShops.take(_currentLimit).toList();
+    }
+  }
+
+
+
+
+
+
+  /// Sort cafes by distance from current location
+  List<CoffeeShop> _sortCafesByDistance(List<CoffeeShop> cafes) {
+    if (_currentPosition == null) return cafes;
+
+    final cafesWithDistance = cafes.map((cafe) {
+      final distance = _calculateDistance(
+        _currentPosition!.latitude,
+        _currentPosition!.longitude,
+        cafe.latitude,
+        cafe.longitude,
+      );
+      return cafe.copyWith(distance: distance);
+    }).toList();
+
+    cafesWithDistance.sort((a, b) => a.distance.compareTo(b.distance));
+    return cafesWithDistance;
+  }
+
+  void setError(String error) {
+    _error = error;
+    notifyListeners();
+  }
+
+
+
+  /// Check if provider is mounted (for async operations)
+  bool get mounted => true; // Simplified for provider
+
+  // Load more cafes from API for ALL filter
+  Future<void> _loadMoreAllCafesFromAPI() async {
+    try {
+      final newCafes = await _placesService.findNearbyCafes(
+        _currentPosition!.latitude,
+        _currentPosition!.longitude,
+        radius: 20000, // 20km radius for variety
+      );
+
+      // Calculate distances
+      final newCafesWithDistance = newCafes.map((cafe) {
+        final distance = _calculateDistance(
+          _currentPosition!.latitude,
+          _currentPosition!.longitude,
+          cafe.latitude,
+          cafe.longitude,
+        );
+        return cafe.copyWith(distance: distance);
+      }).toList();
+
+      // Add to existing coffee shops and remove duplicates
+      final existingIds = _coffeeShops.map((cafe) => cafe.id).toSet();
+      final uniqueNewCafes = newCafesWithDistance.where((cafe) => !existingIds.contains(cafe.id)).toList();
+
+      if (uniqueNewCafes.isNotEmpty) {
+        _coffeeShops.addAll(uniqueNewCafes);
+        AppLogger.info('Loaded ${uniqueNewCafes.length} new cafes from API', tag: 'Pagination');
+      }
+
+      _applyActiveFilter();
+    } catch (e) {
+      AppLogger.error('Failed to load more cafes from API', error: e, tag: 'Pagination');
+      _hasMoreCafes = false; // No more data available
+    }
+  }
+
+  // Load more cafes from API for NEARBY filter
+  Future<void> _loadMoreNearbyCafesFromAPI() async {
+    try {
+      final newCafes = await _placesService.findNearbyCafes(
+        _currentPosition!.latitude,
+        _currentPosition!.longitude,
+        radius: 30000, // 30km radius for more nearby options
+      );
+
+      // Calculate distances
+      final newCafesWithDistance = newCafes.map((cafe) {
+        final distance = _calculateDistance(
+          _currentPosition!.latitude,
+          _currentPosition!.longitude,
+          cafe.latitude,
+          cafe.longitude,
+        );
+        return cafe.copyWith(distance: distance);
+      }).toList();
+
+      // Add to existing coffee shops and remove duplicates
+      final existingIds = _coffeeShops.map((cafe) => cafe.id).toSet();
+      final uniqueNewCafes = newCafesWithDistance.where((cafe) => !existingIds.contains(cafe.id)).toList();
+
+      if (uniqueNewCafes.isNotEmpty) {
+        _coffeeShops.addAll(uniqueNewCafes);
+        AppLogger.info('Loaded ${uniqueNewCafes.length} new nearby cafes from API', tag: 'Pagination');
+      }
+
+      _applyActiveFilter();
+    } catch (e) {
+      AppLogger.error('Failed to load more nearby cafes from API', error: e, tag: 'Pagination');
+      _hasMoreCafes = false; // No more data available
+    }
+  }
+
+  // Load more cafes from API for TOP RATED filter
+  Future<void> _loadMoreTopRatedCafesFromAPI() async {
+    try {
+      final newCafes = await _placesService.searchCafesWithFilters(
+        query: 'cafe',
+        userLat: _currentPosition!.latitude,
+        userLng: _currentPosition!.longitude,
+        maxResults: 20,
+        minRating: 4.0,
+      );
+
+      // Calculate distances
+      final newCafesWithDistance = newCafes.map((cafe) {
+        final distance = _calculateDistance(
+          _currentPosition!.latitude,
+          _currentPosition!.longitude,
+          cafe.latitude,
+          cafe.longitude,
+        );
+        return cafe.copyWith(distance: distance);
+      }).toList();
+
+      // Add to existing coffee shops and remove duplicates
+      final existingIds = _coffeeShops.map((cafe) => cafe.id).toSet();
+      final uniqueNewCafes = newCafesWithDistance.where((cafe) => !existingIds.contains(cafe.id)).toList();
+
+      if (uniqueNewCafes.isNotEmpty) {
+        _coffeeShops.addAll(uniqueNewCafes);
+        AppLogger.info('Loaded ${uniqueNewCafes.length} new top rated cafes from API', tag: 'Pagination');
+      }
+
+      _applyActiveFilter();
+    } catch (e) {
+      AppLogger.error('Failed to load more top rated cafes from API', error: e, tag: 'Pagination');
+      _hasMoreCafes = false; // No more data available
+    }
+  }
+
+  // Load more cafes from API for TOP REVIEW filter
+  Future<void> _loadMoreTopReviewCafesFromAPI() async {
+    try {
+      final newCafes = await _placesService.searchCafesWithFilters(
+        query: 'cafe',
+        userLat: _currentPosition!.latitude,
+        userLng: _currentPosition!.longitude,
+        maxResults: 20,
+        minReviewCount: 50,
+      );
+
+      // Calculate distances
+      final newCafesWithDistance = newCafes.map((cafe) {
+        final distance = _calculateDistance(
+          _currentPosition!.latitude,
+          _currentPosition!.longitude,
+          cafe.latitude,
+          cafe.longitude,
+        );
+        return cafe.copyWith(distance: distance);
+      }).toList();
+
+      // Add to existing coffee shops and remove duplicates
+      final existingIds = _coffeeShops.map((cafe) => cafe.id).toSet();
+      final uniqueNewCafes = newCafesWithDistance.where((cafe) => !existingIds.contains(cafe.id)).toList();
+
+      if (uniqueNewCafes.isNotEmpty) {
+        _coffeeShops.addAll(uniqueNewCafes);
+        AppLogger.info('Loaded ${uniqueNewCafes.length} new top review cafes from API', tag: 'Pagination');
+      }
+
+      _applyActiveFilter();
+    } catch (e) {
+      AppLogger.error('Failed to load more top review cafes from API', error: e, tag: 'Pagination');
+      _hasMoreCafes = false; // No more data available
     }
   }
 }

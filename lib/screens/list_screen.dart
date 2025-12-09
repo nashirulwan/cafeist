@@ -9,6 +9,9 @@ import '../widgets/add_visit_dialog.dart';
 import 'coffee_shop_detail_screen.dart';
 import 'home_screen.dart';
 
+// Type alias for better readability
+typedef VisitDetailsDialog = AddVisitDialog;
+
 class ListScreen extends StatefulWidget {
   const ListScreen({super.key});
 
@@ -428,6 +431,37 @@ class _ListScreenState extends State<ListScreen> with TickerProviderStateMixin {
                     ],
                   ),
                 ],
+                // Action buttons for visited
+                if (type == 'visited') ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => _updateVisitDetails(context, coffeeShop),
+                          icon: const Icon(Icons.edit, size: 16),
+                          label: const Text('Update Visit'),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Colors.blue),
+                            foregroundColor: Colors.blue,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => _removeFromVisited(context, coffeeShop),
+                          icon: const Icon(Icons.delete_outline, size: 16),
+                          label: const Text('Remove'),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Colors.red),
+                            foregroundColor: Colors.red,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
@@ -630,7 +664,6 @@ class _ListScreenState extends State<ListScreen> with TickerProviderStateMixin {
           coffeeShop.id,
           rating: result['personalRating'],
           note: result['privateReview'],
-          visitDates: result['visitDates'],
         );
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -662,6 +695,64 @@ class _ListScreenState extends State<ListScreen> with TickerProviderStateMixin {
           SnackBar(
             content: Text(
               'Removed from your list',
+              style: GoogleFonts.inter(),
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    });
+  }
+
+  void _updateVisitDetails(BuildContext context, CoffeeShop coffeeShop) {
+    // Pre-fill with existing visit data
+    final existingData = coffeeShop.visitData;
+    showDialog<Map<String, dynamic>?>(
+      context: context,
+      builder: (context) => VisitDetailsDialog(
+        coffeeShop: coffeeShop,
+        initialRating: existingData?.personalRating?.toInt(),
+        initialNote: existingData?.privateReview,
+        initialVisitDates: existingData?.visitDates,
+      ),
+    ).then((result) {
+      if (result != null) {
+        final provider = context.read<CoffeeShopProvider>();
+        provider.markAsVisited(
+          coffeeShop.id,
+          rating: result['personalRating'],
+          note: result['privateReview'],
+        );
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Visit details updated!',
+              style: GoogleFonts.inter(),
+            ),
+            backgroundColor: Colors.blue,
+          ),
+        );
+      }
+    });
+  }
+
+  void _removeFromVisited(BuildContext context, CoffeeShop coffeeShop) {
+    showDialog<String>(
+      context: context,
+      builder: (context) => RemoveFromTrackingDialog(
+        coffeeShop: coffeeShop,
+        trackingType: 'visited',
+      ),
+    ).then((result) {
+      if (result == 'remove') {
+        final provider = context.read<CoffeeShopProvider>();
+        provider.removeFromVisited(coffeeShop.id);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Removed from visited list',
               style: GoogleFonts.inter(),
             ),
             backgroundColor: Colors.red,

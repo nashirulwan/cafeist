@@ -228,6 +228,7 @@ class AuthProvider extends ChangeNotifier {
     try {
       await AuthService.signOut();
       _user = null;
+      notifyListeners(); // Trigger rebuild to show AuthScreen
 
       if (kDebugMode) {
         print('✅ User signed out successfully');
@@ -370,6 +371,111 @@ class AuthProvider extends ChangeNotifier {
         print('🔄 Continuing with local data...');
       }
       // Don't throw error, allow user to continue login even if sync fails
+    }
+  }
+
+  /// Update user display name
+  Future<void> updateDisplayName(String newDisplayName) async {
+    if (_isLoading) return;
+    if (_user == null) return;
+    if (newDisplayName.trim().isEmpty) return;
+
+    _setLoading(true);
+    _clearError();
+
+    try {
+      if (kDebugMode) {
+        print('🔄 Updating display name: ${_user!.displayName} -> $newDisplayName');
+      }
+
+      // Update in Firebase Auth
+      await AuthService.updateDisplayName(_user!.uid, newDisplayName);
+
+      // Update local user profile
+      final updatedProfile = UserProfile(
+        uid: _user!.uid,
+        email: _user!.email,
+        displayName: newDisplayName,
+        photoURL: _user!.photoURL,
+        isEmailVerified: _user!.isEmailVerified,
+        createdAt: _user!.createdAt,
+        lastLoginAt: DateTime.now(),
+        authProvider: _user!.authProvider,
+        bio: _user!.bio,
+        location: _user!.location,
+        preferences: _user!.preferences,
+        notificationsEnabled: _user!.notificationsEnabled,
+        defaultRegion: _user!.defaultRegion,
+      );
+
+      _user = updatedProfile;
+
+      // Update in Firestore
+      await FirebaseSyncService.syncUserProfile(updatedProfile);
+
+      if (kDebugMode) {
+        print('✅ Display name updated successfully: $newDisplayName');
+      }
+    } catch (e) {
+      _setError(e.toString());
+      if (kDebugMode) {
+        print('❌ Failed to update display name: $e');
+      }
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// Update user profile photo
+  Future<void> updateProfilePhoto(String? newPhotoURL) async {
+    if (_isLoading) return;
+    if (_user == null) return;
+
+    _setLoading(true);
+    _clearError();
+
+    try {
+      if (kDebugMode) {
+        print('🔄 Updating profile photo...');
+      }
+
+      // Update in Firebase Auth
+      await AuthService.updateProfilePhoto(_user!.uid, newPhotoURL);
+
+      // Update local user profile
+      final updatedProfile = UserProfile(
+        uid: _user!.uid,
+        email: _user!.email,
+        displayName: _user!.displayName,
+        photoURL: newPhotoURL,
+        isEmailVerified: _user!.isEmailVerified,
+        createdAt: _user!.createdAt,
+        lastLoginAt: DateTime.now(),
+        authProvider: _user!.authProvider,
+        bio: _user!.bio,
+        location: _user!.location,
+        preferences: _user!.preferences,
+        notificationsEnabled: _user!.notificationsEnabled,
+        defaultRegion: _user!.defaultRegion,
+      );
+
+      _user = updatedProfile;
+
+      // Update in Firestore
+      await FirebaseSyncService.syncUserProfile(updatedProfile);
+
+      if (kDebugMode) {
+        print('✅ Profile photo updated successfully');
+      }
+    } catch (e) {
+      _setError(e.toString());
+      if (kDebugMode) {
+        print('❌ Failed to update profile photo: $e');
+      }
+      rethrow;
+    } finally {
+      _setLoading(false);
     }
   }
 }

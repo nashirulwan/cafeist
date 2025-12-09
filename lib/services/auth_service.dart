@@ -1,7 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'firebase_service.dart';
 import '../models/user_profile.dart';
 
@@ -402,6 +401,60 @@ class AuthService {
         print('⚠️ Failed to update last login time: $e');
       }
       // Don't throw error for non-critical update
+    }
+  }
+
+  /// Update user display name in Firebase Auth
+  static Future<void> updateDisplayName(String userId, String newDisplayName) async {
+    try {
+      if (kDebugMode) {
+        print('🔄 Updating display name in Firebase Auth for user: $userId');
+      }
+
+      // Get current user
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser != null && currentUser.uid == userId) {
+        await currentUser.updateDisplayName(newDisplayName);
+        await currentUser.reload();
+
+        if (kDebugMode) {
+          print('✅ Display name updated in Firebase Auth');
+        }
+      } else {
+        throw Exception('Current user mismatch or not logged in');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ Failed to update display name in Firebase Auth: $e');
+      }
+      rethrow;
+    }
+  }
+
+  /// Update user profile photo in Firebase Auth
+  static Future<void> updateProfilePhoto(String userId, String? newPhotoURL) async {
+    try {
+      if (kDebugMode) {
+        print('🔄 Updating profile photo in Firebase Auth for user: $userId');
+      }
+
+      // Get current user
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser != null && currentUser.uid == userId) {
+        await currentUser.updatePhotoURL(newPhotoURL);
+        await currentUser.reload();
+
+        if (kDebugMode) {
+          print('✅ Profile photo updated in Firebase Auth');
+        }
+      } else {
+        throw Exception('Current user mismatch or not logged in');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ Failed to update profile photo in Firebase Auth: $e');
+      }
+      rethrow;
     }
   }
 

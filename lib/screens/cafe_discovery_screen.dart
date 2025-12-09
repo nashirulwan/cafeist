@@ -20,7 +20,7 @@ class _CafeDiscoveryScreenState extends State<CafeDiscoveryScreen>
   String _selectedSortOption = 'smart';
   double? _minRating;
   bool? _openNow;
-  List<String> _selectedFeatures = [];
+  final List<String> _selectedFeatures = [];
 
   final List<Map<String, dynamic>> _sortOptions = [
     {'value': 'smart', 'label': 'Smart Sort', 'icon': Icons.auto_awesome},
@@ -659,7 +659,7 @@ class _CafeDiscoveryScreenState extends State<CafeDiscoveryScreen>
                   min: 0.0,
                   max: 5.0,
                   divisions: 10,
-                  label: '${(_minRating ?? 0.0).toStringAsFixed(1)}',
+                  label: (_minRating ?? 0.0).toStringAsFixed(1),
                   onChanged: (value) {
                     setState(() {
                       _minRating = value == 0.0 ? null : value;
