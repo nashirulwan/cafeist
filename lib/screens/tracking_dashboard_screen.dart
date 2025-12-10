@@ -534,6 +534,7 @@ class _TrackingDashboardScreenState extends State<TrackingDashboardScreen>
     );
 
     if (confirmed == true) {
+      if (!mounted) return;
       final trackingProvider = Provider.of<CafeTrackingProvider>(context, listen: false);
       await trackingProvider.removeFromTracking(cafeId);
     }
@@ -560,6 +561,7 @@ class _TrackingDashboardScreenState extends State<TrackingDashboardScreen>
     final userData = await trackingProvider.exportUserData();
 
     if (userData != null) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Data exported successfully!')),
       );

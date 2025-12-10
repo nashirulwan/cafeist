@@ -986,6 +986,7 @@ class _CoffeeShopDetailScreenState extends State<CoffeeShopDetailScreen>
     );
 
     if (result != null) {
+      if (!mounted) return;
       final provider = context.read<CoffeeShopProvider>();
 
       if (result == 'want_to_visit') {
@@ -1033,6 +1034,7 @@ class _CoffeeShopDetailScreenState extends State<CoffeeShopDetailScreen>
     );
 
     if (result != null) {
+      if (!mounted) return;
       final provider = context.read<CoffeeShopProvider>();
       provider.markAsVisited(
         coffeeShop.id,
@@ -1063,6 +1065,7 @@ class _CoffeeShopDetailScreenState extends State<CoffeeShopDetailScreen>
     );
 
     if (result != null) {
+      if (!mounted) return;
       final provider = context.read<CoffeeShopProvider>();
       final visitData = VisitData(
         personalRating: result['personalRating']?.toDouble(),
@@ -1093,6 +1096,7 @@ class _CoffeeShopDetailScreenState extends State<CoffeeShopDetailScreen>
     );
 
     if (result != null) {
+      if (!mounted) return;
       final provider = context.read<CoffeeShopProvider>();
       final visitData = VisitData(
         visitDates: [result],

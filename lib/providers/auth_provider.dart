@@ -226,12 +226,16 @@ class AuthProvider extends ChangeNotifier {
     _clearError();
 
     try {
+      // Clear local tracking data first (favorites, wishlist, visits)
+      final trackingService = PersonalTrackingService();
+      await trackingService.clearLocalData();
+      
       await AuthService.signOut();
       _user = null;
       notifyListeners(); // Trigger rebuild to show AuthScreen
 
       if (kDebugMode) {
-        print('✅ User signed out successfully');
+        print('✅ User signed out and local data cleared');
       }
     } catch (e) {
       _setError('Failed to sign out: $e');

@@ -37,10 +37,14 @@ class FirebaseSyncService {
   static Future<Map<String, dynamic>> getUserDataFromCloud(String userId) async {
     try {
       final userRef = _firestore.collection('users').doc(userId);
-      final docSnapshot = await userRef.get();
+      // Force read from server, not from cache (fixes hot restart issues)
+      final docSnapshot = await userRef.get(const GetOptions(source: Source.server));
 
       if (docSnapshot.exists) {
         final data = docSnapshot.data()!;
+        print('📖 Firebase data from SERVER:');
+        print('   favorites: ${data['favorites']}');
+        print('   wishlist: ${data['wishlist']}');
         AppLogger.success('User data loaded from cloud successfully', tag: 'Firebase');
         return {
           'wishlist': List<String>.from(data['wishlist'] ?? []),
@@ -71,14 +75,24 @@ class FirebaseSyncService {
     required String coffeeShopId,
     required Map<String, dynamic> visitData,
   }) async {
+    // Validate inputs to prevent Firebase field path errors
+    if (coffeeShopId.isEmpty) {
+      AppLogger.error('Cannot sync visit: empty coffeeShopId', tag: 'Firebase');
+      return;
+    }
+    if (userId.isEmpty) {
+      AppLogger.error('Cannot sync visit: empty userId', tag: 'Firebase');
+      return;
+    }
+
     try {
       final userRef = _firestore.collection('users').doc(userId);
 
-      await userRef.update({
-        'visits.$coffeeShopId': visitData,
-        'visits.$coffeeShopId.updatedAt': FieldValue.serverTimestamp(),
+      // First ensure the document exists with at least empty visits map
+      await userRef.set({
+        'visits': {coffeeShopId: visitData},
         'updatedAt': FieldValue.serverTimestamp(),
-      });
+      }, SetOptions(merge: true));
 
       AppLogger.success('Visit data synced to cloud: $coffeeShopId', tag: 'Firebase');
     } catch (e) {
@@ -95,10 +109,11 @@ class FirebaseSyncService {
     try {
       final userRef = _firestore.collection('users').doc(userId);
 
-      await userRef.update({
+      // Use set with merge to ensure doc is created if it doesn't exist
+      await userRef.set({
         'wishlist': wishlist,
         'updatedAt': FieldValue.serverTimestamp(),
-      });
+      }, SetOptions(merge: true));
 
       AppLogger.success('Wishlist synced to cloud: ${wishlist.length} items', tag: 'Firebase');
     } catch (e) {
@@ -144,15 +159,26 @@ class FirebaseSyncService {
     required List<String> favorites,
   }) async {
     try {
+      print('🔥 syncFavoritesToCloud called:');
+      print('   userId: $userId');
+      print('   favorites to sync: $favorites');
+      
       final userRef = _firestore.collection('users').doc(userId);
 
-      await userRef.update({
+      // Use set with merge to ensure doc is created if it doesn't exist
+      await userRef.set({
         'favorites': favorites,
         'updatedAt': FieldValue.serverTimestamp(),
-      });
+      }, SetOptions(merge: true));
+
+      // Verify the data was saved
+      final verifyDoc = await userRef.get();
+      final savedFavorites = verifyDoc.data()?['favorites'] ?? [];
+      print('✅ Verified favorites in Firebase: $savedFavorites');
 
       AppLogger.success('Favorites synced to cloud: ${favorites.length} items', tag: 'Firebase');
     } catch (e) {
+      print('❌ syncFavoritesToCloud FAILED: $e');
       AppLogger.error('Error syncing favorites to cloud', error: e, tag: 'Firebase');
       rethrow;
     }

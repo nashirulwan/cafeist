@@ -13,6 +13,12 @@ class PersonalTrackingService {
   
   /// Save visit data for a coffee shop (with Firebase sync)
   Future<void> saveVisitData(String coffeeShopId, VisitData visitData) async {
+    // Validate input
+    if (coffeeShopId.isEmpty) {
+      AppLogger.error('Cannot save visit: empty coffeeShopId', tag: 'Tracking');
+      return;
+    }
+
     try {
       // Save to local storage first
       final prefs = await SharedPreferences.getInstance();
@@ -57,8 +63,26 @@ class PersonalTrackingService {
     }
   }
 
+  /// Get all visited coffee shop IDs
+  Future<List<String>> getVisitedIds() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final visitsJson = prefs.getString(_visitKey) ?? '{}';
+      final Map<String, dynamic> allVisits = json.decode(visitsJson);
+      return allVisits.keys.toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
   /// Add coffee shop to wishlist (with Firebase sync)
   Future<void> addToWishlist(String coffeeShopId) async {
+    // Validate input
+    if (coffeeShopId.isEmpty) {
+      AppLogger.error('Cannot add to wishlist: empty coffeeShopId', tag: 'Tracking');
+      return;
+    }
+
     try {
       // Add to local storage first
       final prefs = await SharedPreferences.getInstance();
@@ -131,6 +155,12 @@ class PersonalTrackingService {
 
   /// Toggle favorite status (with Firebase sync)
   Future<void> toggleFavorite(String coffeeShopId) async {
+    // Validate input
+    if (coffeeShopId.isEmpty) {
+      AppLogger.error('Cannot toggle favorite: empty coffeeShopId', tag: 'Tracking');
+      return;
+    }
+
     try {
       // Update local storage first
       final prefs = await SharedPreferences.getInstance();
@@ -244,19 +274,26 @@ class PersonalTrackingService {
       // Get data from Firebase
       final cloudData = await FirebaseSyncService.getUserDataFromCloud(userId);
 
+      // Debug: Log what data was received
+      final cloudWishlist = List<String>.from(cloudData['wishlist']);
+      final cloudFavorites = List<String>.from(cloudData['favorites']);
+      final cloudVisits = cloudData['visits'] as Map<String, dynamic>;
+      
+      print('📥 Cloud data received for user $userId:');
+      print('   - Wishlist: ${cloudWishlist.length} items');
+      print('   - Favorites: ${cloudFavorites.length} items');
+      print('   - Visits: ${cloudVisits.length} items');
+
       // Save to local storage
       final prefs = await SharedPreferences.getInstance();
 
       // Sync visits
-      final cloudVisits = cloudData['visits'] as Map<String, dynamic>;
       await prefs.setString(_visitKey, json.encode(cloudVisits));
 
       // Sync wishlist
-      final cloudWishlist = List<String>.from(cloudData['wishlist']);
       await prefs.setString(_wishlistKey, json.encode(cloudWishlist));
 
       // Sync favorites
-      final cloudFavorites = List<String>.from(cloudData['favorites']);
       await prefs.setString(_favoritesKey, json.encode(cloudFavorites));
 
       AppLogger.success('Data synced from cloud to local storage', tag: 'Tracking');
@@ -311,6 +348,23 @@ class PersonalTrackingService {
     } catch (e) {
       AppLogger.error('Error clearing data', error: e, tag: 'Tracking');
       throw Exception('Failed to clear data: $e');
+    }
+  }
+
+  /// Clear local data only (for logout - does NOT delete cloud data)
+  Future<void> clearLocalData() async {
+    try {
+      // Clear local storage only - cloud data stays intact for user's next login
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_visitKey);
+      await prefs.remove(_wishlistKey);
+      await prefs.remove(_favoritesKey);
+      await prefs.remove(_statsKey);
+
+      AppLogger.success('Local tracking data cleared for logout', tag: 'Tracking');
+    } catch (e) {
+      AppLogger.error('Error clearing local data', error: e, tag: 'Tracking');
+      // Don't throw - logout should still proceed even if clearing fails
     }
   }
 }

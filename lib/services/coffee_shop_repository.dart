@@ -19,6 +19,12 @@ class CoffeeShopRepository {
 
   /// Get coffee shop by ID (fetches from API if needed)
   Future<CoffeeShop?> getCoffeeShopById(String id) async {
+    // Validate input
+    if (id.isEmpty) {
+      AppLogger.warning('getCoffeeShopById called with empty ID', tag: 'Repository');
+      return null;
+    }
+
     // Check cache logic here if needed, but for now fetch direct if not found
     try {
       if (!_placesService.isReady) return null;
@@ -113,6 +119,13 @@ class CoffeeShopRepository {
         );
       } else {
         results = await _placesService.searchCafes(query);
+      }
+
+      // Calculate distances if user location is available
+      if (userLat != null && userLng != null) {
+        results = _calculateDistances(results, userLat, userLng);
+        // Sort by distance
+        results.sort((a, b) => a.distance.compareTo(b.distance));
       }
 
       await _cacheManager.cacheSearchResults(query, results);

@@ -251,6 +251,26 @@ class CoffeeShop {
     }
     return '09:00 – 21:00';
   }
+
+  factory CoffeeShop.empty() {
+    return CoffeeShop(
+      id: '',
+      name: '',
+      description: '',
+      address: '',
+      phoneNumber: '',
+      website: '',
+      latitude: 0.0,
+      longitude: 0.0,
+      rating: 0.0,
+      reviewCount: 0,
+      photos: [],
+      reviews: [],
+      openingHours: OpeningHours(
+        monday: '', tuesday: '', wednesday: '', thursday: '', friday: '', saturday: '', sunday: '',
+      ),
+    );
+  }
 }
 
 class Review {

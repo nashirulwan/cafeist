@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:geolocator/geolocator.dart';
 import 'screens/home_screen.dart';
 import 'screens/list_screen.dart';
 import 'screens/favorites_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/auth_screen.dart';
+import 'screens/location_permission_screen.dart';
 import 'providers/coffee_shop_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/auth_provider.dart';
@@ -86,8 +88,12 @@ Future<void> _autoSyncUserData() async {
   try {
     AppLogger.info('Checking for existing user session...', tag: 'Sync');
 
-    // Wait a bit for Firebase to fully initialize
-    await Future.delayed(Duration(milliseconds: 500));
+    // Wait for Firebase auth to be ready
+    final authReady = await FirebaseService.waitForAuthReady();
+    if (!authReady) {
+       AppLogger.info('Auth not ready, skipping auto-sync', tag: 'Sync');
+       return;
+    }
 
     // Check if user is logged in
     if (FirebaseService.isLoggedIn) {
@@ -112,8 +118,50 @@ Future<void> _autoSyncUserData() async {
   }
 }
 
-class CoffeeFinderApp extends StatelessWidget {
+class CoffeeFinderApp extends StatefulWidget {
   const CoffeeFinderApp({super.key});
+
+  @override
+  State<CoffeeFinderApp> createState() => _CoffeeFinderAppState();
+}
+
+class _CoffeeFinderAppState extends State<CoffeeFinderApp> {
+  bool _hasLocationPermission = false;
+  bool _isCheckingPermission = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkLocationPermission();
+  }
+
+  Future<void> _checkLocationPermission() async {
+    try {
+      final permission = await Geolocator.checkPermission();
+      final hasPermission = permission == LocationPermission.always || 
+                            permission == LocationPermission.whileInUse;
+      
+      if (mounted) {
+        setState(() {
+          _hasLocationPermission = hasPermission;
+          _isCheckingPermission = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _hasLocationPermission = false;
+          _isCheckingPermission = false;
+        });
+      }
+    }
+  }
+
+  void _onPermissionGranted() {
+    setState(() {
+      _hasLocationPermission = true;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -129,13 +177,38 @@ class CoffeeFinderApp extends StatelessWidget {
             title: 'Cafeist',
             debugShowCheckedModeBanner: false,
             theme: themeProvider.themeData,
-            home: authProvider.isLoggedIn ? const MainScreen() : const AuthScreen(),
+            home: _buildHome(authProvider),
           );
         },
       ),
     );
   }
+
+  Widget _buildHome(AuthProvider authProvider) {
+    // Show loading while checking permission
+    if (_isCheckingPermission) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    // Show permission screen if not granted
+    if (!_hasLocationPermission) {
+      return LocationPermissionScreen(
+        onPermissionGranted: _onPermissionGranted,
+      );
+    }
+
+    // Show auth or main screen based on login status
+    // Use ValueKey with user ID to force MainScreen rebuild when user changes
+    return authProvider.isLoggedIn 
+        ? MainScreen(key: ValueKey(authProvider.user?.uid ?? 'main'))
+        : const AuthScreen();
+  }
 }
+
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -159,6 +232,9 @@ class _MainScreenState extends State<MainScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Refresh tracking data after login (synced from cloud)
+      context.read<CoffeeShopProvider>().refreshTrackingDataAfterLogin();
+      // Then update nearby coffee shops
       context.read<CoffeeShopProvider>().updateNearbyCoffeeShops();
     });
   }

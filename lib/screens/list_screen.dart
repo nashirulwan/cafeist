@@ -653,61 +653,65 @@ class _ListScreenState extends State<ListScreen> with TickerProviderStateMixin {
     return sortedShops;
   }
 
-  void _markAsVisited(BuildContext context, CoffeeShop coffeeShop) {
-    showDialog<Map<String, dynamic>?>(
+  void _markAsVisited(BuildContext context, CoffeeShop coffeeShop) async {
+    final result = await showDialog<Map<String, dynamic>?>(
       context: context,
       builder: (context) => VisitDetailsDialog(coffeeShop: coffeeShop),
-    ).then((result) {
-      if (result != null) {
-        final provider = context.read<CoffeeShopProvider>();
-        provider.markAsVisited(
-          coffeeShop.id,
-          rating: result['personalRating'],
-          note: result['privateReview'],
-        );
+    );
+    
+    if (result != null) {
+      if (!mounted) return;
+      final provider = context.read<CoffeeShopProvider>();
+      provider.markAsVisited(
+        coffeeShop.id,
+        rating: result['personalRating'],
+        note: result['privateReview'],
+      );
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Marked as visited!',
-              style: GoogleFonts.inter(),
-            ),
-            backgroundColor: Colors.green,
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Marked as visited!',
+            style: GoogleFonts.inter(),
           ),
-        );
-      }
-    });
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
   }
 
-  void _removeFromWantToVisit(BuildContext context, CoffeeShop coffeeShop) {
-    showDialog<String>(
+  void _removeFromWantToVisit(BuildContext context, CoffeeShop coffeeShop) async {
+    final result = await showDialog<String>(
       context: context,
       builder: (context) => RemoveFromTrackingDialog(
         coffeeShop: coffeeShop,
         trackingType: 'want_to_visit',
       ),
-    ).then((result) {
-      if (result == 'remove') {
-        final provider = context.read<CoffeeShopProvider>();
-        provider.removeFromWantToVisit(coffeeShop.id);
+    );
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Removed from your list',
-              style: GoogleFonts.inter(),
-            ),
-            backgroundColor: Colors.red,
+    if (result == 'remove') {
+      if (!mounted) return;
+      final provider = context.read<CoffeeShopProvider>();
+      provider.removeFromWantToVisit(coffeeShop.id);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Removed from your list',
+            style: GoogleFonts.inter(),
           ),
-        );
-      }
-    });
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
-  void _updateVisitDetails(BuildContext context, CoffeeShop coffeeShop) {
+  void _updateVisitDetails(BuildContext context, CoffeeShop coffeeShop) async {
     // Pre-fill with existing visit data
     final existingData = coffeeShop.visitData;
-    showDialog<Map<String, dynamic>?>(
+    final result = await showDialog<Map<String, dynamic>?>(
       context: context,
       builder: (context) => VisitDetailsDialog(
         coffeeShop: coffeeShop,
@@ -715,50 +719,54 @@ class _ListScreenState extends State<ListScreen> with TickerProviderStateMixin {
         initialNote: existingData?.privateReview,
         initialVisitDates: existingData?.visitDates,
       ),
-    ).then((result) {
-      if (result != null) {
-        final provider = context.read<CoffeeShopProvider>();
-        provider.markAsVisited(
-          coffeeShop.id,
-          rating: result['personalRating'],
-          note: result['privateReview'],
-        );
+    );
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Visit details updated!',
-              style: GoogleFonts.inter(),
-            ),
-            backgroundColor: Colors.blue,
+    if (result != null) {
+      if (!mounted) return;
+      final provider = context.read<CoffeeShopProvider>();
+      provider.markAsVisited(
+        coffeeShop.id,
+        rating: result['personalRating'],
+        note: result['privateReview'],
+      );
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Visit details updated!',
+            style: GoogleFonts.inter(),
           ),
-        );
-      }
-    });
+          backgroundColor: Colors.blue,
+        ),
+      );
+    }
   }
 
-  void _removeFromVisited(BuildContext context, CoffeeShop coffeeShop) {
-    showDialog<String>(
+  void _removeFromVisited(BuildContext context, CoffeeShop coffeeShop) async {
+    final result = await showDialog<String>(
       context: context,
       builder: (context) => RemoveFromTrackingDialog(
         coffeeShop: coffeeShop,
         trackingType: 'visited',
       ),
-    ).then((result) {
-      if (result == 'remove') {
-        final provider = context.read<CoffeeShopProvider>();
-        provider.removeFromVisited(coffeeShop.id);
+    );
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Removed from visited list',
-              style: GoogleFonts.inter(),
-            ),
-            backgroundColor: Colors.red,
+    if (result == 'remove') {
+      if (!mounted) return;
+      final provider = context.read<CoffeeShopProvider>();
+      provider.removeFromVisited(coffeeShop.id);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Removed from visited list',
+            style: GoogleFonts.inter(),
           ),
-        );
-      }
-    });
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }

@@ -45,6 +45,19 @@ class FirebaseService {
     }
   }
 
+  /// Wait for the auth state to ensure we have a valid user or null
+  static Future<bool> waitForAuthReady() async {
+    if (!_initialized) return false;
+    try {
+      // Wait for first auth state emission
+      await _auth.authStateChanges().first;
+      return true;
+    } catch (e) {
+      AppLogger.error('Error waiting for auth ready', error: e, tag: 'Firebase');
+      return false;
+    }
+  }
+
   /// Get Firebase Auth instance
   static FirebaseAuth get auth => _auth;
 

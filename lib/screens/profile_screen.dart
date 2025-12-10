@@ -682,6 +682,7 @@ class ProfileScreen extends StatelessWidget {
                     try {
                       await authProvider
                           .updateDisplayName(nameController.text.trim());
+                      if (!context.mounted) return;
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
@@ -746,6 +747,7 @@ class ProfileScreen extends StatelessWidget {
                       Navigator.pop(context);
                       try {
                         await authProvider.updateProfilePhoto(null);
+                        if (!context.mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text('Profile photo removed'),

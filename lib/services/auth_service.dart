@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart';
 import 'firebase_service.dart';
@@ -346,13 +347,14 @@ class AuthService {
   /// Save user profile to Firestore
   static Future<void> _saveUserProfile(UserProfile profile) async {
     try {
+      // Use merge: true to preserve existing fields like favorites, wishlist, visits
       await FirebaseService.firestore
           .collection('users')
           .doc(profile.uid)
-          .set(profile.toJson());
+          .set(profile.toJson(), SetOptions(merge: true));
 
       if (kDebugMode) {
-        print('✅ User profile saved to Firestore');
+        print('✅ User profile saved to Firestore (merged)');
       }
     } catch (e) {
       if (kDebugMode) {

@@ -8,7 +8,6 @@ import '../utils/logger.dart';
 
 class PlacesService {
   static String? _apiKey;
-  static const String _baseUrl = 'https://maps.googleapis.com/maps/api/place';
 
   // Initialize with environment variable
   static void initialize() {
@@ -164,8 +163,18 @@ class PlacesService {
     final photos = place['photos'] as List? ?? [];
     final openingHours = place['opening_hours'] as Map<String, dynamic>?;
 
+    // Get place_id - try multiple possible keys
+    final placeId = place['place_id'] as String? ?? 
+                    place['id'] as String? ?? 
+                    place['reference'] as String? ?? 
+                    '';
+    
+    if (placeId.isEmpty && kDebugMode) {
+      print('⚠️ No place_id found in API response. Available keys: ${place.keys.toList()}');
+    }
+
     return CoffeeShop(
-      id: place['place_id'] as String? ?? '',
+      id: placeId,
       name: place['name'] as String? ?? 'Unknown Cafe',
       description: _getDescription(place),
       address: place['vicinity'] as String? ?? place['formatted_address'] as String? ?? '',
@@ -254,6 +263,12 @@ class PlacesService {
         'key': _apiKey!,
       };
 
+      // Add location bias to search near user's GPS location
+      if (userLat != null && userLng != null) {
+        queryParams['location'] = '$userLat,$userLng';
+        queryParams['radius'] = '10000'; // 10km radius
+      }
+
       // Add filters
       if (minRating != null) {
         queryParams['minprice'] = '0'; // Will be filtered client-side for better results
@@ -320,7 +335,7 @@ class PlacesService {
     try {
       final uri = Uri.https('maps.googleapis.com', '/maps/api/place/details/json', {
         'place_id': placeId,
-        'fields': 'name,formatted_address,formatted_phone_number,website,rating,user_ratings_total,geometry,photos,reviews,opening_hours',
+        'fields': 'place_id,name,formatted_address,formatted_phone_number,website,rating,user_ratings_total,geometry,photos,reviews,opening_hours',
         'language': 'id',
         'key': _apiKey!,
       });
@@ -495,10 +510,14 @@ class PlacesService {
     try {
 
 
-      return await findNearbyCafes(
-        userLat ?? -6.2088, // Default Jakarta
-        userLng ?? 106.8456,
-        radius: radius,
+      // Build query with features
+      final featureQuery = features.join(' ');
+      final query = 'coffee shop with $featureQuery';
+      
+      return await searchCafesWithFilters(
+        query: query,
+        userLat: userLat,
+        userLng: userLng,
       );
     } catch (e) {
       if (kDebugMode) {
