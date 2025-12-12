@@ -32,6 +32,23 @@ This project demonstrates the integration of a public RESTful API into a Flutter
 3.  **Local Persistence**: User preferences (favorites, visit history) are stored locally and synced when authenticated.
 4.  **UI/UX**: Modern implementation with responsive design and visual feedback for network operations.
 
+## App Screenshots
+
+### Feature Overview
+| My List (Want to Visit) | My List (Visited) | Favorites | Profile |
+|:---:|:---:|:---:|:---:|
+| <img src="assets/screenshot/wanttovisit_mylist.jpeg" width="200" /> | <img src="assets/screenshot/visited_mylist.jpeg" width="200" /> | <img src="assets/screenshot/favorites.jpeg" width="200" /> | <img src="assets/screenshot/profile.jpeg" width="200" /> |
+
+### Use Flow (Tracking)
+| Add to Visited | Success State |
+|:---:|:---:|
+| <img src="assets/screenshot/add_visited_list.jpeg" width="200" /> | <img src="assets/screenshot/done_add_visied.jpeg" width="200" /> |
+
+### Theming System
+| Theme Variant 1 | Theme Variant 2 | Theme Variant 3 | Theme Variant 4 |
+|:---:|:---:|:---:|:---:|
+| <img src="assets/screenshot/theme_1.jpeg" width="200" /> | <img src="assets/screenshot/theme_2.jpeg" width="200" /> | <img src="assets/screenshot/theme_3.jpeg" width="200" /> | <img src="assets/screenshot/theme_4.jpeg" width="200" /> |
+
 ## Setup Instructions
 
 1.  **Clone the repository**
