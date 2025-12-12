@@ -35,19 +35,26 @@ This project demonstrates the integration of a public RESTful API into a Flutter
 ## App Overview
 
 ### 4 Different Themes
-| Theme Variant 1 | Theme Variant 2 | Theme Variant 3 | Theme Variant 4 |
-|:---:|:---:|:---:|:---:|
-| <img src="assets/screenshot/theme_1.jpeg" width="200" /> | <img src="assets/screenshot/theme_2.jpeg" width="200" /> | <img src="assets/screenshot/theme_3.jpeg" width="200" /> | <img src="assets/screenshot/theme_4.jpeg" width="200" /> |
+<p align="center">
+  <img src="assets/screenshot/theme_1.jpeg" width="180" />
+  <img src="assets/screenshot/theme_2.jpeg" width="180" />
+  <img src="assets/screenshot/theme_3.jpeg" width="180" />
+  <img src="assets/screenshot/theme_4.jpeg" width="180" />
+</p>
 
 ### Feature Overview
-| My List (Want to Visit) | My List (Visited) | Favorites | Profile |
-|:---:|:---:|:---:|:---:|
-| <img src="assets/screenshot/wanttovisit_mylist.jpeg" width="200" /> | <img src="assets/screenshot/visited_mylist.jpeg" width="200" /> | <img src="assets/screenshot/favorites.jpeg" width="200" /> | <img src="assets/screenshot/profile.jpeg" width="200" /> |
+<p align="center">
+  <img src="assets/screenshot/wanttovisit_mylist.jpeg" width="180" />
+  <img src="assets/screenshot/visited_mylist.jpeg" width="180" />
+  <img src="assets/screenshot/favorites.jpeg" width="180" />
+  <img src="assets/screenshot/profile.jpeg" width="180" />
+</p>
 
 ### Use Flow (Tracking)
-| Add to Visited | Success State |
-|:---:|:---:|
-| <img src="assets/screenshot/add_visited_list.jpeg" width="200" /> | <img src="assets/screenshot/done_add_visied.jpeg" width="200" /> |
+<p align="center">
+  <img src="assets/screenshot/add_visited_list.jpeg" width="200" />
+  <img src="assets/screenshot/done_add_visied.jpeg" width="200" />
+</p>
 
 ## Setup Instructions
 
